@@ -1,9 +1,8 @@
 [build]
-builder = "NIXPACKS"
-buildCommand = "composer install --no-dev --optimize-autoloader && php artisan config:cache && php artisan route:cache && php artisan view:cache"
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=$PORT"
 healthcheckPath = "/api/v1/hebergements"
-healthcheckTimeout = 30
+healthcheckTimeout = 60
 restartPolicyType = "ON_FAILURE"
