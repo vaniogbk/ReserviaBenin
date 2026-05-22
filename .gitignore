@@ -1,6 +1,9 @@
 # ── Dépendances ──────────────────────────────────────────────────────────────
+node_modules/
+package-lock.json
 reservia/backend/vendor/
 reservia/frontend/node_modules/
+reservia/package-lock.json
 
 # ── Builds ───────────────────────────────────────────────────────────────────
 reservia/frontend/dist/
@@ -18,6 +21,16 @@ reservia/backend/.phpunit.result.cache
 
 # ── Documents (ne pas versionner les PDFs) ───────────────────────────────────
 *.pdf
+
+# ── Fichiers temporaires locaux ───────────────────────────────────────────────
+tunnel-url.txt
+tunnel-err.txt
+reservia/frontend/tunnel-fixed.txt
+reservia/frontend/tunnel-fixed-err.txt
+
+# ── Médias non utilisés ───────────────────────────────────────────────────────
+ALLOSECOURS.jpeg
+LogoSav+.jpeg
 
 # ── Éditeurs / OS ─────────────────────────────────────────────────────────────
 .DS_Store
