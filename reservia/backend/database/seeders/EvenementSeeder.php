@@ -36,7 +36,7 @@ class EvenementSeeder extends Seeder
                 'nombre_places_disponibles' => 5000,
                 'prix_entree' => 15000,
                 'statut' => 'publié',
-                'image_principale' => 'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/16/62/a4/stade-de-l-amitie.jpg',
+                'image_principale' => 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=1200&q=80',
                 'programme' => json_encode([
                     'jour1' => ['Ouverture officielle', 'Concerts live', 'Exposition'],
                     'jour2' => ['Danse traditionnelle', 'Défilé', 'Feu d\'artifice'],
@@ -60,7 +60,7 @@ class EvenementSeeder extends Seeder
                 'nombre_places_disponibles' => 10000,
                 'prix_entree' => 5000,
                 'statut' => 'publié',
-                'image_principale' => 'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/03/70/e4/2c/le-jardin-secret.jpg',
+                'image_principale' => 'https://carnavalouidah.org/wp-content/uploads/2026/03/parade-scaled.webp',
             ],
             [
                 'user_id' => $host2->id,
@@ -80,6 +80,7 @@ class EvenementSeeder extends Seeder
                 'prix_entree' => 50000,
                 'statut' => 'publié',
                 'lien_virtuel' => 'https://meet.reservia.bj/entreprendre2026',
+                'image_principale' => 'https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=1200&q=80',
                 'programme' => json_encode([
                     'matin' => ['Accueil', 'Session d\'ouverture', 'Présentation startups'],
                     'apres_midi' => ['Panel discussion', 'Networking'],
@@ -103,7 +104,7 @@ class EvenementSeeder extends Seeder
                 'nombre_places_disponibles' => 2000,
                 'prix_entree' => 2000,
                 'statut' => 'publié',
-                'image_principale' => 'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/11/41/35/8b/hotel-continental-cotonou.jpg',
+                'image_principale' => 'https://fda.bj/images/snab-M.jpg',
             ],
             [
                 'user_id' => $host->id,
@@ -122,7 +123,7 @@ class EvenementSeeder extends Seeder
                 'nombre_places_disponibles' => 8000,
                 'prix_entree' => 0,
                 'statut' => 'publié',
-                'image_principale' => 'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/08/12/72/f5/l-univers-de-chez-monique.jpg',
+                'image_principale' => 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=1200&q=80',
             ],
 
             // ── NOUVEAUX ÉVÉNEMENTS ───────────────────────────────────────
@@ -145,7 +146,7 @@ class EvenementSeeder extends Seeder
                 'nombre_places_disponibles' => 3000,
                 'prix_entree' => 10000,
                 'statut' => 'publié',
-                'image_principale' => 'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/74/49/7c/azalai-hotel-cotonou.jpg',
+                'image_principale' => 'https://cdn-az.allevents.in/events2/banners/98cc632cc7a5ec2f6f89b568fa23d361cc1ea4df078f65c11f81e7ca8ae5baac-rimg-w1080-h720-dcd3c3be-gmir?v=1752501672',
                 'programme' => json_encode([
                     'jour1' => ['18h : Ouverture des portes', '20h : Artistes béninois en live', '22h : Tête d\'affiche internationale', '01h : DJ set clôture'],
                     'jour2' => ['19h : Ouverture des portes', '21h : Concert acoustique', '23h : Headliner FestiChill', '02h : After party'],
@@ -170,7 +171,7 @@ class EvenementSeeder extends Seeder
                 'nombre_places_disponibles' => 5000,
                 'prix_entree' => 5000,
                 'statut' => 'publié',
-                'image_principale' => 'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2c/1e/96/d2/mercure-cotonou.jpg',
+                'image_principale' => 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1200&q=80',
                 'programme' => json_encode([
                     'tous_les_jours' => ['11h–14h : Déjeuners des chefs', '15h–17h : Ateliers culinaires', '18h–22h : Dîners gastronomiques & dégustations'],
                 ]),
@@ -195,7 +196,7 @@ class EvenementSeeder extends Seeder
                 'prix_entree' => 0,
                 'statut' => 'publié',
                 'lien_virtuel' => 'https://live.gouv.bj/independance2026',
-                'image_principale' => 'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/05/19/5f/ba/benin-marina-hotel.jpg',
+                'image_principale' => 'https://live.staticflickr.com/65535/54692540827_a3ce4c1875_h.jpg',
                 'programme' => json_encode([
                     'matin' => ['08h : Lever du drapeau', '09h : Défilé militaire', '11h : Défilé civil des régions'],
                     'après_midi' => ['14h : Village culturel ouvert', '15h : Spectacles folkloriques', '17h : Concerts gratuits'],
