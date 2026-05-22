@@ -16,6 +16,9 @@ reservia/backend/storage/logs/*.log
 reservia/backend/storage/app/public/
 reservia/backend/.phpunit.result.cache
 
+# ── Documents (ne pas versionner les PDFs) ───────────────────────────────────
+*.pdf
+
 # ── Éditeurs / OS ─────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
