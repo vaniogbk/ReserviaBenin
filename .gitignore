@@ -1,0 +1,24 @@
+# ── Dépendances ──────────────────────────────────────────────────────────────
+reservia/backend/vendor/
+reservia/frontend/node_modules/
+
+# ── Builds ───────────────────────────────────────────────────────────────────
+reservia/frontend/dist/
+
+# ── Variables d'environnement (JAMAIS committer les secrets) ─────────────────
+reservia/backend/.env
+reservia/frontend/.env.local
+reservia/frontend/.env.production.local
+
+# ── Cache Laravel ─────────────────────────────────────────────────────────────
+reservia/backend/bootstrap/cache/*.php
+reservia/backend/storage/logs/*.log
+reservia/backend/storage/app/public/
+reservia/backend/.phpunit.result.cache
+
+# ── Éditeurs / OS ─────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/settings.json
