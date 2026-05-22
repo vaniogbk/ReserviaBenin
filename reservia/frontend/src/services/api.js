@@ -9,7 +9,11 @@ if (!apiUrl) {
 
 const api = axios.create({
   baseURL: apiUrl,
-  headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+  headers: {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json',
+    'Bypass-Tunnel-Reminder': 'true',
+  },
 })
 
 // Injecter le token automatiquement
