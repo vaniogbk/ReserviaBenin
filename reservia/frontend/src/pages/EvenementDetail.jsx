@@ -172,18 +172,21 @@ export default function EvenementDetail() {
 
         {/* ── Hero image / header ── */}
         <div className="relative h-72 sm:h-96 overflow-hidden">
-          {e.image_principale_url ? (
-            <>
-              <img src={e.image_principale_url} alt={e.titre}
-                className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-dark via-dark/50 to-dark/20" />
-            </>
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-dark to-dark/80 relative">
-              <div className="absolute inset-0 opacity-20"
-                style={{ background: 'radial-gradient(ellipse at 80% 50%, rgba(196,96,58,0.5), transparent)' }} />
-            </div>
+          {/* Gradient fallback — always rendered */}
+          <div className="absolute inset-0 bg-gradient-to-br from-dark to-dark/80">
+            <div className="absolute inset-0 opacity-20"
+              style={{ background: 'radial-gradient(ellipse at 80% 50%, rgba(196,96,58,0.5), transparent)' }} />
+          </div>
+          {/* Photo on top — hides on error */}
+          {e.image_principale_url && (
+            <img
+              src={e.image_principale_url}
+              alt={e.titre}
+              className="absolute inset-0 w-full h-full object-cover"
+              onError={ev => { ev.currentTarget.style.display = 'none' }}
+            />
           )}
+          <div className="absolute inset-0 bg-gradient-to-t from-dark via-dark/50 to-dark/20 pointer-events-none" />
 
           <div className="absolute inset-0 flex items-end">
             <div className="max-w-5xl w-full mx-auto px-4 sm:px-8 pb-8">
