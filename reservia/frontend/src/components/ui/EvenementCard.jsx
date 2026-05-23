@@ -52,7 +52,7 @@ export default function EvenementCard({ item }) {
             src={item.image_principale_url}
             alt={item.titre}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-            onError={e => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'flex' }}
+            onError={e => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling.style.display = 'flex' }}
           />
         ) : null}
         {/* Fallback gradient */}
