@@ -209,8 +209,8 @@ export default function Reservation() {
     } else if (methode === 'paypal') {
       payload = { paypal_email: formData.paypal_email }
     } else {
-      // MTN MoMo or Moov Money — prefix not included, backend re-adds if needed
-      payload = { telephone: formData.telephone }
+      // Strip all non-digits before sending (handles spaces, dashes)
+      payload = { telephone: formData.telephone.replace(/\D/g, '') }
     }
     confirmerMutation.mutate({ id: paiementId, payload })
   }

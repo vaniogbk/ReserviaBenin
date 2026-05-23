@@ -90,9 +90,9 @@ class PaiementController extends Controller
                 'paypal_email' => 'required|email',
             ]);
         } else {
-            // Mobile Money (MTN MoMo, Moov Money) — new 10-digit Benin format: 01XXXXXXXX
+            // Mobile Money — accept both old 8-digit and new 10-digit Benin format
             $request->validate([
-                'telephone' => ['required', 'string', 'regex:/^(\+229|00229)?01[0-9]{8}$/'],
+                'telephone' => ['required', 'string', 'regex:/^(\+229|00229)?(01)?[0-9]{8}$/'],
             ]);
         }
 
