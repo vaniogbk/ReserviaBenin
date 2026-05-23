@@ -22,7 +22,7 @@ class PaiementController extends Controller
     {
         $data = $request->validate([
             'numero_reservation' => 'required|string|exists:reservations,numero_reservation',
-            'methode'            => 'required|in:carte_credit,mobile_money,mtn_momo,moov_money,fedapay,cinetpay',
+            'methode'            => 'required|in:carte_credit,mobile_money,mtn_momo,moov_money,fedapay,paypal',
         ]);
 
         $reservation = Reservation::where('numero_reservation', $data['numero_reservation'])
@@ -75,7 +75,8 @@ class PaiementController extends Controller
 
         // Valider les données sandbox selon la méthode
         $methode = $paiement->methode;
-        $isCarteOuFedapay = in_array($methode, ['carte_credit', 'fedapay', 'cinetpay']);
+        $isCarteOuFedapay = in_array($methode, ['carte_credit', 'fedapay']);
+        $isPaypal = $methode === 'paypal';
 
         if ($isCarteOuFedapay) {
             $request->validate([
@@ -84,9 +85,14 @@ class PaiementController extends Controller
                 'cvv'          => 'required|string|min:3|max:4',
                 'nom_carte'    => 'required|string|min:3',
             ]);
-        } else {
+        } elseif ($isPaypal) {
             $request->validate([
-                'telephone' => ['required', 'string', 'regex:/^(\+229|00229|229)?[0-9]{8}$/'],
+                'paypal_email' => 'required|email',
+            ]);
+        } else {
+            // Mobile Money (MTN MoMo, Moov Money) — new 10-digit Benin format: 01XXXXXXXX
+            $request->validate([
+                'telephone' => ['required', 'string', 'regex:/^(\+229|00229)?01[0-9]{8}$/'],
             ]);
         }
 

@@ -7,8 +7,11 @@ import toast from 'react-hot-toast'
 import {
   FaCreditCard, FaMobileAlt, FaLock, FaCheckCircle,
   FaCalendarAlt, FaUsers, FaTag, FaFlask, FaArrowLeft,
-  FaArrowRight, FaShieldAlt, FaBolt, FaCheck
+  FaArrowRight, FaShieldAlt, FaBolt, FaCheck, FaPaypal,
+  FaUser, FaEnvelope, FaPhone, FaInfoCircle
 } from 'react-icons/fa'
+
+// ─── Constants ─────────────────────────────────────────────────────────────
 
 const STEPS = [
   { label: 'Séjour',        icon: FaCalendarAlt },
@@ -18,35 +21,100 @@ const STEPS = [
 ]
 
 const METHODES = [
-  { id: 'mtn_momo',    label: 'MTN MoMo',      sousTitre: 'Mobile Money',   bg: 'from-yellow-400 to-yellow-500',  border: 'border-yellow-400', text: 'text-yellow-900' },
-  { id: 'moov_money',  label: 'Moov Money',    sousTitre: 'Mobile Money',   bg: 'from-blue-500 to-blue-600',      border: 'border-blue-500',   text: 'text-white' },
-  { id: 'fedapay',     label: 'Carte bancaire', sousTitre: 'Visa / Mastercard', bg: 'from-slate-700 to-slate-900', border: 'border-slate-700',  text: 'text-white' },
-  { id: 'cinetpay',    label: 'CinetPay',       sousTitre: 'Carte / Mobile',  bg: 'from-orange-500 to-red-500',   border: 'border-orange-500', text: 'text-white' },
+  {
+    id: 'mtn_momo',
+    label: 'MTN MoMo',
+    sousTitre: 'Mobile Money',
+    bg: 'from-yellow-400 to-yellow-500',
+    border: 'border-yellow-400',
+    selectedText: 'text-yellow-900',
+  },
+  {
+    id: 'moov_money',
+    label: 'Moov Money',
+    sousTitre: 'Mobile Money',
+    bg: 'from-blue-500 to-blue-700',
+    border: 'border-blue-500',
+    selectedText: 'text-white',
+  },
+  {
+    id: 'fedapay',
+    label: 'Carte bancaire',
+    sousTitre: 'Visa / Mastercard',
+    bg: 'from-slate-700 to-slate-900',
+    border: 'border-slate-700',
+    selectedText: 'text-white',
+  },
+  {
+    id: 'paypal',
+    label: 'PayPal',
+    sousTitre: 'Paiement international',
+    bg: 'from-blue-600 to-blue-800',
+    border: 'border-blue-600',
+    selectedText: 'text-white',
+  },
 ]
+
+// ─── Helpers ───────────────────────────────────────────────────────────────
 
 function formatCard(val) {
   return val.replace(/\D/g, '').slice(0, 16).replace(/(.{4})/g, '$1 ').trim()
 }
 
+function formatExpiry(val) {
+  const digits = val.replace(/\D/g, '').slice(0, 4)
+  if (digits.length >= 3) return digits.slice(0, 2) + '/' + digits.slice(2)
+  return digits
+}
+
+// ─── Counter ───────────────────────────────────────────────────────────────
+
 function Counter({ value, onChange, min = 1, max = 20 }) {
   return (
     <div className="flex items-center gap-4">
-      <button type="button" onClick={() => onChange(Math.max(min, value - 1))}
+      <button type="button"
+        onClick={() => onChange(Math.max(min, value - 1))}
+        disabled={value <= min}
         className="w-10 h-10 rounded-full border-2 border-earth/40 flex items-center justify-center
-          text-earth hover:border-dark hover:text-dark transition-all font-bold text-lg disabled:opacity-30"
-        disabled={value <= min}>−</button>
-      <span className="w-10 text-center font-bold text-xl text-dark">{value}</span>
-      <button type="button" onClick={() => onChange(Math.min(max, value + 1))}
+          text-earth hover:border-dark hover:text-dark transition-all font-bold text-lg disabled:opacity-30">
+        −
+      </button>
+      <span className="w-10 text-center font-bold text-2xl text-dark">{value}</span>
+      <button type="button"
+        onClick={() => onChange(Math.min(max, value + 1))}
+        disabled={value >= max}
         className="w-10 h-10 rounded-full border-2 border-earth/40 flex items-center justify-center
-          text-earth hover:border-dark hover:text-dark transition-all font-bold text-lg disabled:opacity-30"
-        disabled={value >= max}>+</button>
+          text-earth hover:border-dark hover:text-dark transition-all font-bold text-lg disabled:opacity-30">
+        +
+      </button>
     </div>
   )
 }
 
+// ─── Form Field ────────────────────────────────────────────────────────────
+
+function Field({ label, error, required, children }) {
+  return (
+    <div>
+      <label className="block text-xs font-semibold text-earth uppercase tracking-wider mb-2">
+        {label} {required && <span className="text-terracotta">*</span>}
+      </label>
+      {children}
+      {error && (
+        <p className="flex items-center gap-1 text-red-500 text-xs mt-1.5">
+          <FaInfoCircle size={10} /> {error.message}
+        </p>
+      )}
+    </div>
+  )
+}
+
+// ─── Main Component ─────────────────────────────────────────────────────────
+
 export default function Reservation() {
   const { type, id } = useParams()
   const navigate = useNavigate()
+
   const [step, setStep] = useState(0)
   const [methode, setMethode] = useState('mtn_momo')
   const [paiementId, setPaiementId] = useState(null)
@@ -54,7 +122,7 @@ export default function Reservation() {
   const [cardNum, setCardNum] = useState('')
   const [nbPersonnes, setNbPersonnes] = useState(2)
 
-  const { register, handleSubmit, watch, formState: { errors } } = useForm()
+  const { register, handleSubmit, watch, trigger, formState: { errors } } = useForm({ mode: 'onBlur' })
 
   const { data, isLoading } = useQuery({
     queryKey: [type, id],
@@ -72,6 +140,8 @@ export default function Reservation() {
   const fraisService = Math.round(montantBase * 0.05)
   const taxes        = Math.round(montantBase * 0.03)
   const total        = montantBase + fraisService + taxes
+
+  // ── Mutations ──
 
   const creerMutation = useMutation({
     mutationFn: reservationApi.creer,
@@ -93,6 +163,16 @@ export default function Reservation() {
     },
     onError: (e) => toast.error(e.response?.data?.message || 'Échec du paiement.'),
   })
+
+  // ── Step handlers ──
+
+  const handleStep0Next = async () => {
+    if (type === 'hebergement') {
+      const ok = await trigger(['date_debut', 'date_fin'])
+      if (!ok) return
+    }
+    setStep(1)
+  }
 
   const onSubmitCoordonnees = (formData) => {
     const payload = { type, notes_particulieres: formData.notes_particulieres }
@@ -118,12 +198,24 @@ export default function Reservation() {
   }
 
   const onConfirmerPaiement = (formData) => {
-    const methodeInfo = METHODES.find(m => m.id === methode)
-    const payload = methodeInfo?.id === 'fedapay' || methodeInfo?.id === 'cinetpay'
-      ? { numero_carte: cardNum.replace(/\s/g, ''), expiration: formData.expiration, cvv: formData.cvv, nom_carte: formData.nom_carte }
-      : { telephone: formData.telephone }
+    let payload
+    if (methode === 'fedapay') {
+      payload = {
+        numero_carte: cardNum.replace(/\s/g, ''),
+        expiration: formData.expiration,
+        cvv: formData.cvv,
+        nom_carte: formData.nom_carte,
+      }
+    } else if (methode === 'paypal') {
+      payload = { paypal_email: formData.paypal_email }
+    } else {
+      // MTN MoMo or Moov Money — prefix not included, backend re-adds if needed
+      payload = { telephone: formData.telephone }
+    }
     confirmerMutation.mutate({ id: paiementId, payload })
   }
+
+  // ── Loading ──
 
   if (isLoading) return (
     <div className="pt-16 flex items-center justify-center h-screen bg-sand">
@@ -135,18 +227,20 @@ export default function Reservation() {
   )
 
   const methodeCourante = METHODES.find(m => m.id === methode)
-  const estCarte = methode === 'fedapay' || methode === 'cinetpay'
+  const estCarte  = methode === 'fedapay'
+  const estPaypal = methode === 'paypal'
+  const estMobile = methode === 'mtn_momo' || methode === 'moov_money'
+
+  const today = new Date().toISOString().split('T')[0]
 
   return (
     <div className="pt-16 min-h-screen bg-sand">
 
-      {/* ── Barre de progression ── */}
+      {/* ── Progress bar ── */}
       <div className="bg-white border-b border-earth/15 sticky top-16 z-20 shadow-sm">
         <div className="max-w-5xl mx-auto px-4 py-5">
           <div className="flex items-center justify-between relative">
-            {/* Ligne de fond */}
             <div className="absolute top-4 left-8 right-8 h-0.5 bg-earth/15 z-0" />
-            {/* Ligne de progression */}
             <div className="absolute top-4 left-8 h-0.5 bg-terracotta z-0 transition-all duration-500"
               style={{ width: `calc(${(step / (STEPS.length - 1)) * 100}% - 4rem)` }} />
 
@@ -175,175 +269,286 @@ export default function Reservation() {
 
       <div className="max-w-5xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-5 gap-8">
 
-        {/* ── Formulaire principal ── */}
+        {/* ── Main form ── */}
         <div className="lg:col-span-3 space-y-6">
 
-          {/* ÉTAPE 0 : Séjour */}
+          {/* ── STEP 0: Séjour ── */}
           {step === 0 && resource && (
-            <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-              <div className="bg-gradient-to-r from-dark to-dark/80 text-white p-6">
-                <h2 className="font-display text-2xl font-light mb-1">Votre séjour</h2>
-                <p className="text-earth/60 text-sm">{resource.titre || resource.nom}</p>
+            <div className="bg-white rounded-3xl shadow-sm overflow-hidden border border-earth/10">
+              <div className="bg-gradient-to-r from-dark to-dark/80 text-white px-6 py-5">
+                <p className="text-earth/60 text-xs uppercase tracking-widest mb-1">
+                  {type === 'hebergement' ? 'Hébergement' : 'Événement'}
+                </p>
+                <h2 className="font-display text-2xl font-light">Votre séjour</h2>
               </div>
-              <div className="p-6 space-y-6">
+
+              <div className="p-6 space-y-7">
 
                 {type === 'hebergement' && (
-                  <div className="grid grid-cols-2 gap-4">
-                    {[
-                      { name: 'date_debut', label: 'Arrivée', min: new Date().toISOString().split('T')[0] },
-                      { name: 'date_fin',   label: 'Départ',  min: dateDebut || new Date().toISOString().split('T')[0] },
-                    ].map(({ name, label, min }) => (
-                      <div key={name}>
-                        <label className="block text-xs font-semibold text-earth uppercase tracking-wider mb-2">
-                          {label}
-                        </label>
-                        <div className="relative">
-                          <FaCalendarAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-earth/60" size={14} />
-                          <input type="date" className="w-full pl-9 pr-3 py-3 border border-earth/20 rounded-xl
-                            focus:outline-none focus:ring-2 focus:ring-dark/20 focus:border-dark text-sm bg-sand/50"
-                            min={min} {...register(name, { required: 'Requis' })} />
-                        </div>
-                        {errors[name] && <p className="text-red-500 text-xs mt-1">{errors[name].message}</p>}
+                  <>
+                    <div>
+                      <p className="text-xs font-semibold text-earth uppercase tracking-widest mb-4">
+                        Dates de séjour <span className="text-terracotta">*</span>
+                      </p>
+                      <div className="grid grid-cols-2 gap-4">
+                        {[
+                          { name: 'date_debut', label: 'Arrivée', min: today, validate: v => v >= today || 'Date passée' },
+                          { name: 'date_fin',   label: 'Départ',  min: dateDebut || today,
+                            validate: v => !dateDebut || v > dateDebut || 'Doit être après l\'arrivée' },
+                        ].map(({ name, label, min, validate }) => (
+                          <div key={name} className={`rounded-2xl border-2 transition-all overflow-hidden
+                            ${errors[name] ? 'border-red-400 bg-red-50' : 'border-earth/20 bg-sand/40 focus-within:border-dark'}`}>
+                            <label className="block text-xs font-semibold text-earth px-4 pt-3 pb-1 uppercase tracking-wider">
+                              {label}
+                            </label>
+                            <div className="flex items-center gap-2 px-4 pb-3">
+                              <FaCalendarAlt className="text-earth/50 flex-shrink-0" size={14} />
+                              <input type="date"
+                                className="flex-1 bg-transparent text-sm text-dark focus:outline-none"
+                                min={min}
+                                {...register(name, { required: 'Requis', validate })} />
+                            </div>
+                            {errors[name] && (
+                              <p className="px-4 pb-2 text-red-500 text-xs flex items-center gap-1">
+                                <FaInfoCircle size={9} /> {errors[name].message}
+                              </p>
+                            )}
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+
+                    {dateDebut && dateFin && new Date(dateFin) > new Date(dateDebut) && (
+                      <div className="bg-sand rounded-2xl px-5 py-3 flex items-center justify-between text-sm">
+                        <span className="text-earth">Durée du séjour</span>
+                        <span className="font-bold text-dark">{nbNuits} nuit{nbNuits > 1 ? 's' : ''}</span>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 <div>
-                  <label className="block text-xs font-semibold text-earth uppercase tracking-wider mb-3">
-                    {type === 'hebergement' ? 'Voyageurs' : 'Nombre de places'}
-                  </label>
-                  <Counter value={nbPersonnes} onChange={setNbPersonnes} />
+                  <p className="text-xs font-semibold text-earth uppercase tracking-widest mb-4">
+                    {type === 'hebergement' ? 'Nombre de voyageurs' : 'Nombre de places'}
+                  </p>
+                  <div className="bg-sand/50 rounded-2xl px-6 py-5 flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold text-dark text-sm">
+                        {type === 'hebergement' ? 'Voyageurs' : 'Participants'}
+                      </p>
+                      <p className="text-earth text-xs mt-0.5">Adultes et enfants</p>
+                    </div>
+                    <Counter value={nbPersonnes} onChange={setNbPersonnes} />
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-earth uppercase tracking-wider mb-2">
+                  <p className="text-xs font-semibold text-earth uppercase tracking-widest mb-2">
                     Demandes spéciales
-                  </label>
+                  </p>
                   <textarea {...register('notes_particulieres')} rows={3}
-                    className="w-full px-4 py-3 border border-earth/20 rounded-xl focus:outline-none
-                      focus:ring-2 focus:ring-dark/20 focus:border-dark text-sm resize-none bg-sand/30"
-                    placeholder="Allergie, lit bébé, arrivée tardive…" />
+                    className="w-full px-4 py-3 border-2 border-earth/15 rounded-2xl focus:outline-none
+                      focus:border-dark text-sm resize-none bg-sand/20 transition-colors"
+                    placeholder="Allergie, lit bébé, arrivée tardive, régime alimentaire…" />
                 </div>
 
-                <button onClick={() => setStep(1)}
-                  className="w-full bg-dark text-white rounded-xl py-4 font-semibold flex items-center
-                    justify-center gap-2 hover:bg-dark/90 active:scale-[.98] transition-all">
+                <button type="button" onClick={handleStep0Next}
+                  className="w-full bg-dark text-white rounded-2xl py-4 font-semibold flex items-center
+                    justify-center gap-2 hover:bg-dark/90 active:scale-[.98] transition-all text-base">
                   Continuer <FaArrowRight size={14} />
                 </button>
               </div>
             </div>
           )}
 
-          {/* ÉTAPE 1 : Coordonnées */}
+          {/* ── STEP 1: Coordonnées ── */}
           {step === 1 && (
             <form onSubmit={handleSubmit(onSubmitCoordonnees)}
-              className="bg-white rounded-2xl shadow-sm overflow-hidden">
-              <div className="bg-gradient-to-r from-dark to-dark/80 text-white p-6">
-                <h2 className="font-display text-2xl font-light mb-1">Vos coordonnées</h2>
-                <p className="text-earth/60 text-sm">Ces informations sont sécurisées et chiffrées</p>
+              className="bg-white rounded-3xl shadow-sm overflow-hidden border border-earth/10">
+              <div className="bg-gradient-to-r from-dark to-dark/80 text-white px-6 py-5">
+                <div className="flex items-center gap-3 mb-1">
+                  <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
+                    <FaUser size={16} className="text-earth" />
+                  </div>
+                  <h2 className="font-display text-2xl font-light">Vos coordonnées</h2>
+                </div>
+                <p className="text-earth/60 text-sm ml-13 pl-[3.25rem]">
+                  Toutes vos informations sont chiffrées et sécurisées
+                </p>
               </div>
-              <div className="p-6 space-y-4">
+
+              <div className="p-6 space-y-5">
 
                 <div className="grid grid-cols-2 gap-4">
-                  {[
-                    { name: 'prenom', label: 'Prénom', placeholder: 'Kofi' },
-                    { name: 'nom',    label: 'Nom',    placeholder: 'Mensah' },
-                  ].map(({ name, label, placeholder }) => (
-                    <div key={name}>
-                      <label className="block text-xs font-semibold text-earth uppercase tracking-wider mb-2">{label} *</label>
-                      <input {...register(name, { required: 'Requis' })}
-                        className="w-full px-4 py-3 border border-earth/20 rounded-xl focus:outline-none
-                          focus:ring-2 focus:ring-dark/20 focus:border-dark text-sm"
-                        placeholder={placeholder} />
-                      {errors[name] && <p className="text-red-500 text-xs mt-1">{errors[name].message}</p>}
+                  <Field label="Prénom" required error={errors.prenom}>
+                    <div className={`flex items-center border-2 rounded-2xl px-4 py-3 gap-3 transition-colors
+                      ${errors.prenom ? 'border-red-400 bg-red-50' : 'border-earth/20 focus-within:border-dark bg-sand/20'}`}>
+                      <FaUser className="text-earth/50 flex-shrink-0" size={14} />
+                      <input
+                        {...register('prenom', {
+                          required: 'Le prénom est requis',
+                          minLength: { value: 2, message: 'Min. 2 caractères' },
+                        })}
+                        className="flex-1 bg-transparent text-sm focus:outline-none"
+                        placeholder="Kofi" />
                     </div>
-                  ))}
+                  </Field>
+
+                  <Field label="Nom" required error={errors.nom}>
+                    <div className={`flex items-center border-2 rounded-2xl px-4 py-3 gap-3 transition-colors
+                      ${errors.nom ? 'border-red-400 bg-red-50' : 'border-earth/20 focus-within:border-dark bg-sand/20'}`}>
+                      <FaUser className="text-earth/50 flex-shrink-0" size={14} />
+                      <input
+                        {...register('nom', {
+                          required: 'Le nom est requis',
+                          minLength: { value: 2, message: 'Min. 2 caractères' },
+                        })}
+                        className="flex-1 bg-transparent text-sm focus:outline-none"
+                        placeholder="Mensah" />
+                    </div>
+                  </Field>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-earth uppercase tracking-wider mb-2">Email *</label>
-                  <input type="email" {...register('email', { required: 'Requis' })}
-                    className="w-full px-4 py-3 border border-earth/20 rounded-xl focus:outline-none
-                      focus:ring-2 focus:ring-dark/20 focus:border-dark text-sm"
-                    placeholder="kofi@exemple.com" />
-                  {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-earth uppercase tracking-wider mb-2">Téléphone</label>
-                  <div className="flex gap-2">
-                    <span className="px-4 py-3 border border-earth/20 rounded-xl bg-sand/50 text-sm font-semibold text-dark flex-shrink-0">+229</span>
-                    <input type="tel" {...register('telephone')}
-                      className="flex-1 px-4 py-3 border border-earth/20 rounded-xl focus:outline-none
-                        focus:ring-2 focus:ring-dark/20 focus:border-dark text-sm"
-                      placeholder="96 00 00 00" />
+                <Field label="Adresse e-mail" required error={errors.email}>
+                  <div className={`flex items-center border-2 rounded-2xl px-4 py-3 gap-3 transition-colors
+                    ${errors.email ? 'border-red-400 bg-red-50' : 'border-earth/20 focus-within:border-dark bg-sand/20'}`}>
+                    <FaEnvelope className="text-earth/50 flex-shrink-0" size={14} />
+                    <input type="email"
+                      {...register('email', {
+                        required: 'L\'e-mail est requis',
+                        pattern: {
+                          value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                          message: 'Adresse e-mail invalide',
+                        },
+                      })}
+                      className="flex-1 bg-transparent text-sm focus:outline-none"
+                      placeholder="kofi.mensah@exemple.com" />
                   </div>
-                </div>
+                </Field>
+
+                <Field label="Téléphone" required error={errors.telephone_contact}>
+                  <div className={`flex items-center border-2 rounded-2xl overflow-hidden transition-colors
+                    ${errors.telephone_contact ? 'border-red-400' : 'border-earth/20 focus-within:border-dark'}`}>
+                    {/* Country prefix */}
+                    <div className="flex items-center gap-2 px-4 py-3 bg-sand/50 border-r border-earth/20 flex-shrink-0">
+                      <span className="text-lg">🇧🇯</span>
+                      <span className="text-sm font-bold text-dark">+229</span>
+                    </div>
+                    <div className={`flex items-center flex-1 px-4 py-3 gap-3
+                      ${errors.telephone_contact ? 'bg-red-50' : 'bg-sand/20'}`}>
+                      <FaPhone className="text-earth/50 flex-shrink-0" size={13} />
+                      <input type="tel"
+                        {...register('telephone_contact', {
+                          required: 'Le numéro de téléphone est requis',
+                          pattern: {
+                            value: /^01[0-9]{8}$/,
+                            message: 'Format requis : 01 XX XX XX XX (10 chiffres)',
+                          },
+                        })}
+                        className="flex-1 bg-transparent text-sm font-mono tracking-widest focus:outline-none"
+                        placeholder="01 96 XX XX XX"
+                        maxLength={10} />
+                    </div>
+                  </div>
+                  {!errors.telephone_contact && (
+                    <p className="text-earth/60 text-xs mt-1.5 ml-1">
+                      Format béninois : 01 suivi de 8 chiffres
+                    </p>
+                  )}
+                </Field>
 
                 <div className="flex gap-3 pt-2">
                   <button type="button" onClick={() => setStep(0)}
-                    className="flex-1 py-3.5 border-2 border-earth/30 rounded-xl text-dark font-semibold
+                    className="flex-1 py-3.5 border-2 border-earth/30 rounded-2xl text-dark font-semibold
                       flex items-center justify-center gap-2 hover:border-dark transition-all">
                     <FaArrowLeft size={13} /> Retour
                   </button>
                   <button type="submit" disabled={creerMutation.isPending}
-                    className="flex-1 py-3.5 bg-dark text-white rounded-xl font-semibold flex items-center
+                    className="flex-1 py-3.5 bg-dark text-white rounded-2xl font-semibold flex items-center
                       justify-center gap-2 hover:bg-dark/90 active:scale-[.98] transition-all disabled:opacity-60">
-                    {creerMutation.isPending ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Traitement…</> : <>Continuer <FaArrowRight size={13} /></>}
+                    {creerMutation.isPending
+                      ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Traitement…</>
+                      : <>Continuer <FaArrowRight size={13} /></>}
                   </button>
                 </div>
               </div>
             </form>
           )}
 
-          {/* ÉTAPE 2 : Choix méthode */}
+          {/* ── STEP 2: Méthode de paiement ── */}
           {step === 2 && reservation && (
-            <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-              <div className="bg-gradient-to-r from-dark to-dark/80 text-white p-6">
-                <h2 className="font-display text-2xl font-light mb-1">Moyen de paiement</h2>
-                <p className="text-earth/60 text-sm">Choisissez votre méthode préférée</p>
+            <div className="bg-white rounded-3xl shadow-sm overflow-hidden border border-earth/10">
+              <div className="bg-gradient-to-r from-dark to-dark/80 text-white px-6 py-5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
+                    <FaCreditCard size={16} className="text-earth" />
+                  </div>
+                  <div>
+                    <h2 className="font-display text-2xl font-light">Moyen de paiement</h2>
+                    <p className="text-earth/60 text-sm">Choisissez votre méthode préférée</p>
+                  </div>
+                </div>
               </div>
+
               <div className="p-6">
 
                 <div className="grid grid-cols-2 gap-3 mb-6">
-                  {METHODES.map(m => (
-                    <button key={m.id} type="button" onClick={() => setMethode(m.id)}
-                      className={`relative p-4 rounded-2xl border-2 text-left transition-all overflow-hidden
-                        ${methode === m.id ? `border-transparent bg-gradient-to-br ${m.bg} text-white shadow-lg` : 'border-earth/20 bg-white hover:border-earth/50'}`}>
-                      {methode === m.id && (
-                        <div className="absolute top-2 right-2 w-5 h-5 bg-white/20 rounded-full flex items-center justify-center">
-                          <FaCheck size={9} className="text-white" />
+                  {METHODES.map(m => {
+                    const selected = methode === m.id
+                    return (
+                      <button key={m.id} type="button" onClick={() => setMethode(m.id)}
+                        className={`relative p-4 rounded-2xl border-2 text-left transition-all overflow-hidden
+                          ${selected
+                            ? `border-transparent bg-gradient-to-br ${m.bg} shadow-lg scale-[1.02]`
+                            : 'border-earth/20 bg-white hover:border-earth/40 hover:bg-sand/30'}`}>
+
+                        {selected && (
+                          <div className="absolute top-2.5 right-2.5 w-5 h-5 bg-white/25 rounded-full
+                            flex items-center justify-center">
+                            <FaCheck size={9} className="text-white" />
+                          </div>
+                        )}
+
+                        {/* Icon */}
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3
+                          ${selected ? 'bg-white/20' : 'bg-sand'}`}>
+                          {m.id === 'paypal'
+                            ? <FaPaypal size={18} className={selected ? 'text-white' : 'text-blue-600'} />
+                            : m.id === 'fedapay'
+                            ? <FaCreditCard size={16} className={selected ? 'text-white' : 'text-earth'} />
+                            : <FaMobileAlt size={16} className={selected ? 'text-white' : 'text-earth'} />}
                         </div>
-                      )}
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-3
-                        ${methode === m.id ? 'bg-white/20' : 'bg-sand'}`}>
-                        {m.id === 'fedapay' || m.id === 'cinetpay'
-                          ? <FaCreditCard size={16} className={methode === m.id ? 'text-white' : 'text-earth'} />
-                          : <FaMobileAlt size={16} className={methode === m.id ? 'text-white' : 'text-earth'} />}
-                      </div>
-                      <div className={`font-bold text-sm ${methode === m.id ? 'text-white' : 'text-dark'}`}>{m.label}</div>
-                      <div className={`text-xs mt-0.5 ${methode === m.id ? 'text-white/70' : 'text-earth'}`}>{m.sousTitre}</div>
-                    </button>
-                  ))}
+
+                        <div className={`font-bold text-sm ${selected ? 'text-white' : 'text-dark'}`}>
+                          {m.label}
+                        </div>
+                        <div className={`text-xs mt-0.5 ${selected ? 'text-white/75' : 'text-earth'}`}>
+                          {m.sousTitre}
+                        </div>
+                      </button>
+                    )
+                  })}
                 </div>
 
-                <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-100 rounded-xl mb-6 text-sm">
-                  <FaShieldAlt className="text-green-500 flex-shrink-0" size={16} />
+                {/* Security banner */}
+                <div className="flex items-start gap-3 p-4 bg-green-50 border border-green-100 rounded-2xl mb-6">
+                  <FaShieldAlt className="text-green-500 flex-shrink-0 mt-0.5" size={16} />
                   <div>
-                    <span className="font-semibold text-green-700">Paiement 100% sécurisé</span>
-                    <p className="text-green-600 text-xs mt-0.5">Vos données sont chiffrées AES-256 et jamais stockées</p>
+                    <span className="font-semibold text-green-700 text-sm">Paiement 100% sécurisé</span>
+                    <p className="text-green-600 text-xs mt-0.5">
+                      Vos données sont chiffrées AES-256 et ne sont jamais stockées sur nos serveurs
+                    </p>
                   </div>
                 </div>
 
                 <div className="flex gap-3">
                   <button type="button" onClick={() => setStep(1)}
-                    className="flex-1 py-3.5 border-2 border-earth/30 rounded-xl text-dark font-semibold
+                    className="flex-1 py-3.5 border-2 border-earth/30 rounded-2xl text-dark font-semibold
                       flex items-center justify-center gap-2 hover:border-dark transition-all">
                     <FaArrowLeft size={13} /> Retour
                   </button>
                   <button onClick={onChoisirMethode} disabled={initierMutation.isPending}
-                    className="flex-1 py-3.5 bg-terracotta text-white rounded-xl font-semibold flex items-center
+                    className="flex-1 py-3.5 bg-terracotta text-white rounded-2xl font-semibold flex items-center
                       justify-center gap-2 hover:bg-terracotta/90 active:scale-[.98] transition-all disabled:opacity-60">
                     {initierMutation.isPending
                       ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Traitement…</>
@@ -354,36 +559,52 @@ export default function Reservation() {
             </div>
           )}
 
-          {/* ÉTAPE 3 : Saisie paiement */}
+          {/* ── STEP 3: Saisie paiement ── */}
           {step === 3 && paiementId && (
             <form onSubmit={handleSubmit(onConfirmerPaiement)}
-              className="bg-white rounded-2xl shadow-sm overflow-hidden">
-              <div className="bg-gradient-to-r from-dark to-dark/80 text-white p-6">
-                <h2 className="font-display text-2xl font-light mb-1 flex items-center gap-2">
-                  {estCarte ? <FaCreditCard size={20} /> : <FaMobileAlt size={20} />}
-                  {estCarte ? 'Paiement par carte' : `Paiement ${methodeCourante?.label}`}
-                </h2>
-                <div className="flex items-center gap-2 mt-2">
-                  <FaFlask className="text-amber-400" size={12} />
+              className="bg-white rounded-3xl shadow-sm overflow-hidden border border-earth/10">
+
+              <div className="bg-gradient-to-r from-dark to-dark/80 text-white px-6 py-5">
+                <div className="flex items-center gap-3 mb-1">
+                  <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
+                    {estCarte
+                      ? <FaCreditCard size={16} className="text-earth" />
+                      : estPaypal
+                      ? <FaPaypal size={16} className="text-blue-300" />
+                      : <FaMobileAlt size={16} className="text-earth" />}
+                  </div>
+                  <h2 className="font-display text-2xl font-light">
+                    {estCarte ? 'Paiement par carte'
+                      : estPaypal ? 'Paiement PayPal'
+                      : `Paiement ${methodeCourante?.label}`}
+                  </h2>
+                </div>
+                <div className="flex items-center gap-2 pl-[3.25rem]">
+                  <FaFlask className="text-amber-400" size={11} />
                   <span className="text-amber-300 text-xs font-medium">Mode Sandbox — Simulation uniquement</span>
                 </div>
               </div>
+
               <div className="p-6 space-y-5">
 
-                {/* Astuce sandbox */}
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm">
-                  <p className="font-semibold text-amber-700 mb-1">Données de test</p>
+                {/* Sandbox hint */}
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+                  <p className="font-semibold text-amber-700 text-sm mb-1">Données de test</p>
                   <p className="text-amber-600 text-xs">
                     {estCarte
-                      ? 'Carte : 4242 4242 4242 4242 · Expiry : 12/26 · CVV : 123'
-                      : 'Téléphone : 96 000 000 (8 chiffres, sans indicatif)'}
+                      ? 'Carte : 4242 4242 4242 4242 · Expiry : 12/26 · CVV : 123 · Nom : TEST USER'
+                      : estPaypal
+                      ? 'E-mail PayPal : sandbox@paypal.com'
+                      : 'Téléphone : 01 96 00 00 00 (format 01XXXXXXXX, 10 chiffres)'}
                   </p>
                 </div>
 
-                {estCarte ? (
+                {/* ─── Card payment ─── */}
+                {estCarte && (
                   <>
-                    {/* Visuel carte */}
-                    <div className="bg-gradient-to-br from-dark via-dark/90 to-earth/60 rounded-2xl p-6 text-white relative overflow-hidden select-none">
+                    {/* Card preview */}
+                    <div className="bg-gradient-to-br from-dark via-dark/90 to-earth/60 rounded-2xl p-6
+                      text-white relative overflow-hidden select-none shadow-xl">
                       <div className="absolute -top-8 -right-8 w-40 h-40 bg-white/5 rounded-full" />
                       <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-white/5 rounded-full" />
                       <div className="relative z-10">
@@ -409,76 +630,169 @@ export default function Reservation() {
                       </div>
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-semibold text-earth uppercase tracking-wider mb-2">Numéro de carte *</label>
-                      <input type="text" className="w-full px-4 py-3 border border-earth/20 rounded-xl
-                        focus:outline-none focus:ring-2 focus:ring-dark/20 focus:border-dark font-mono tracking-widest text-sm"
+                    <Field label="Numéro de carte" required error={errors.numero_carte_field}>
+                      <input type="text"
+                        className={`w-full px-4 py-3 border-2 rounded-2xl focus:outline-none font-mono
+                          tracking-widest text-sm transition-colors
+                          ${errors.numero_carte_field ? 'border-red-400 bg-red-50' : 'border-earth/20 focus:border-dark bg-sand/20'}`}
                         placeholder="4242 4242 4242 4242"
-                        value={cardNum} onChange={e => setCardNum(formatCard(e.target.value))} maxLength={19} required />
-                    </div>
+                        value={cardNum}
+                        onChange={e => setCardNum(formatCard(e.target.value))}
+                        maxLength={19}
+                        required />
+                    </Field>
 
                     <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-semibold text-earth uppercase tracking-wider mb-2">Expiration *</label>
-                        <input type="text" className="w-full px-4 py-3 border border-earth/20 rounded-xl
-                          focus:outline-none focus:ring-2 focus:ring-dark/20 focus:border-dark font-mono text-sm"
+                      <Field label="Expiration" required error={errors.expiration}>
+                        <input type="text"
+                          className={`w-full px-4 py-3 border-2 rounded-2xl focus:outline-none font-mono text-sm
+                            transition-colors ${errors.expiration ? 'border-red-400 bg-red-50' : 'border-earth/20 focus:border-dark bg-sand/20'}`}
                           placeholder="MM/AA"
-                          {...register('expiration', { required: 'Requis', pattern: { value: /^\d{2}\/\d{2}$/, message: 'Format MM/AA' } })}
-                          maxLength={5} />
-                        {errors.expiration && <p className="text-red-500 text-xs mt-1">{errors.expiration.message}</p>}
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-earth uppercase tracking-wider mb-2">CVV *</label>
-                        <input type="text" className="w-full px-4 py-3 border border-earth/20 rounded-xl
-                          focus:outline-none focus:ring-2 focus:ring-dark/20 focus:border-dark font-mono text-sm"
+                          maxLength={5}
+                          {...register('expiration', {
+                            required: 'Requis',
+                            pattern: { value: /^\d{2}\/\d{2}$/, message: 'Format MM/AA' },
+                            validate: v => {
+                              const [mm, yy] = v.split('/')
+                              const exp = new Date(2000 + parseInt(yy), parseInt(mm) - 1, 1)
+                              return exp > new Date() || 'Carte expirée'
+                            },
+                          })}
+                          onChange={e => {
+                            const formatted = formatExpiry(e.target.value)
+                            e.target.value = formatted
+                          }} />
+                      </Field>
+
+                      <Field label="CVV" required error={errors.cvv}>
+                        <input type="text"
+                          className={`w-full px-4 py-3 border-2 rounded-2xl focus:outline-none font-mono text-sm
+                            transition-colors ${errors.cvv ? 'border-red-400 bg-red-50' : 'border-earth/20 focus:border-dark bg-sand/20'}`}
                           placeholder="123"
-                          {...register('cvv', { required: 'Requis', minLength: 3, maxLength: 4 })} maxLength={4} />
-                        {errors.cvv && <p className="text-red-500 text-xs mt-1">CVV invalide</p>}
+                          maxLength={4}
+                          {...register('cvv', {
+                            required: 'Requis',
+                            minLength: { value: 3, message: '3-4 chiffres' },
+                            maxLength: { value: 4, message: '3-4 chiffres' },
+                            pattern: { value: /^\d{3,4}$/, message: '3-4 chiffres' },
+                          })} />
+                      </Field>
+                    </div>
+
+                    <Field label="Nom sur la carte" required error={errors.nom_carte}>
+                      <input type="text"
+                        className={`w-full px-4 py-3 border-2 rounded-2xl focus:outline-none text-sm uppercase
+                          tracking-wider transition-colors
+                          ${errors.nom_carte ? 'border-red-400 bg-red-50' : 'border-earth/20 focus:border-dark bg-sand/20'}`}
+                        placeholder="KOFI MENSAH"
+                        {...register('nom_carte', {
+                          required: 'Requis',
+                          minLength: { value: 3, message: 'Min. 3 caractères' },
+                        })} />
+                    </Field>
+                  </>
+                )}
+
+                {/* ─── PayPal ─── */}
+                {estPaypal && (
+                  <div>
+                    {/* PayPal branding */}
+                    <div className="bg-[#003087] rounded-2xl p-5 text-white mb-5 flex items-center gap-4">
+                      <FaPaypal size={36} className="text-[#009cde]" />
+                      <div>
+                        <p className="font-bold text-lg">PayPal</p>
+                        <p className="text-white/70 text-xs">Paiement international sécurisé</p>
                       </div>
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-semibold text-earth uppercase tracking-wider mb-2">Nom sur la carte *</label>
-                      <input type="text" className="w-full px-4 py-3 border border-earth/20 rounded-xl
-                        focus:outline-none focus:ring-2 focus:ring-dark/20 focus:border-dark text-sm uppercase tracking-wider"
-                        placeholder="KOFI MENSAH"
-                        {...register('nom_carte', { required: 'Requis', minLength: 3 })} />
-                      {errors.nom_carte && <p className="text-red-500 text-xs mt-1">Requis</p>}
-                    </div>
-                  </>
-                ) : (
-                  <div>
-                    <label className="block text-xs font-semibold text-earth uppercase tracking-wider mb-2">
-                      Numéro {methodeCourante?.label} *
-                    </label>
-                    <div className="flex gap-2">
-                      <span className="px-4 py-3 border border-earth/20 rounded-xl bg-sand/50 text-sm font-bold text-dark flex-shrink-0">+229</span>
-                      <input type="tel" className="flex-1 px-4 py-3 border border-earth/20 rounded-xl
-                        focus:outline-none focus:ring-2 focus:ring-dark/20 focus:border-dark text-sm font-mono tracking-widest"
-                        placeholder="96 00 00 00"
-                        {...register('telephone', {
-                          required: 'Requis',
-                          pattern: { value: /^[0-9]{8}$/, message: '8 chiffres requis' },
-                        })} maxLength={8} />
-                    </div>
-                    {errors.telephone && <p className="text-red-500 text-xs mt-1">{errors.telephone.message}</p>}
+                    <Field label="Adresse e-mail PayPal" required error={errors.paypal_email}>
+                      <div className={`flex items-center border-2 rounded-2xl px-4 py-3 gap-3 transition-colors
+                        ${errors.paypal_email ? 'border-red-400 bg-red-50' : 'border-earth/20 focus-within:border-dark bg-sand/20'}`}>
+                        <FaEnvelope className="text-earth/50 flex-shrink-0" size={14} />
+                        <input type="email"
+                          {...register('paypal_email', {
+                            required: 'L\'e-mail PayPal est requis',
+                            pattern: {
+                              value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                              message: 'E-mail invalide',
+                            },
+                          })}
+                          className="flex-1 bg-transparent text-sm focus:outline-none"
+                          placeholder="votre-email@paypal.com" />
+                      </div>
+                    </Field>
                   </div>
                 )}
 
-                <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-100 rounded-xl">
+                {/* ─── Mobile Money ─── */}
+                {estMobile && (
+                  <div>
+                    {/* Mobile banner */}
+                    <div className={`rounded-2xl p-5 mb-5 flex items-center gap-4
+                      ${methode === 'mtn_momo'
+                        ? 'bg-gradient-to-r from-yellow-400 to-yellow-500'
+                        : 'bg-gradient-to-r from-blue-500 to-blue-700'}`}>
+                      <FaMobileAlt size={32} className={methode === 'mtn_momo' ? 'text-yellow-900' : 'text-white'} />
+                      <div>
+                        <p className={`font-bold text-lg ${methode === 'mtn_momo' ? 'text-yellow-900' : 'text-white'}`}>
+                          {methodeCourante?.label}
+                        </p>
+                        <p className={`text-xs ${methode === 'mtn_momo' ? 'text-yellow-800/70' : 'text-white/70'}`}>
+                          Votre numéro {methodeCourante?.label} du Bénin
+                        </p>
+                      </div>
+                    </div>
+
+                    <Field label={`Numéro ${methodeCourante?.label}`} required error={errors.telephone}>
+                      <div className={`flex items-center border-2 rounded-2xl overflow-hidden transition-colors
+                        ${errors.telephone ? 'border-red-400' : 'border-earth/20 focus-within:border-dark'}`}>
+                        <div className="flex items-center gap-2 px-4 py-3 bg-sand/50 border-r border-earth/20 flex-shrink-0">
+                          <span className="text-lg">🇧🇯</span>
+                          <span className="text-sm font-bold text-dark">+229</span>
+                        </div>
+                        <div className={`flex items-center flex-1 px-4 py-3 gap-3
+                          ${errors.telephone ? 'bg-red-50' : 'bg-sand/20'}`}>
+                          <FaPhone className="text-earth/50 flex-shrink-0" size={13} />
+                          <input type="tel"
+                            {...register('telephone', {
+                              required: 'Le numéro est requis',
+                              pattern: {
+                                value: /^01[0-9]{8}$/,
+                                message: 'Format requis : 01 XX XX XX XX (10 chiffres)',
+                              },
+                            })}
+                            className="flex-1 bg-transparent text-sm font-mono tracking-widest focus:outline-none"
+                            placeholder="01 XX XX XX XX"
+                            maxLength={10} />
+                        </div>
+                      </div>
+                      {!errors.telephone && (
+                        <p className="text-earth/60 text-xs mt-1.5 ml-1">
+                          Exemple : 01 96 00 00 00 (nouveau format béninois, 10 chiffres)
+                        </p>
+                      )}
+                    </Field>
+                  </div>
+                )}
+
+                {/* SSL indicator */}
+                <div className="flex items-center gap-2 p-3.5 bg-green-50 border border-green-100 rounded-2xl">
                   <FaLock className="text-green-500 flex-shrink-0" size={12} />
-                  <span className="text-green-700 text-xs">Connexion sécurisée SSL · {total.toLocaleString('fr-FR')} FCFA</span>
+                  <span className="text-green-700 text-xs font-medium">
+                    Connexion sécurisée SSL · Montant : {total.toLocaleString('fr-FR')} FCFA
+                  </span>
                 </div>
 
                 <div className="flex gap-3 pt-1">
                   <button type="button" onClick={() => setStep(2)}
-                    className="flex-1 py-3.5 border-2 border-earth/30 rounded-xl text-dark font-semibold
+                    className="flex-1 py-3.5 border-2 border-earth/30 rounded-2xl text-dark font-semibold
                       flex items-center justify-center gap-2 hover:border-dark transition-all">
                     <FaArrowLeft size={13} /> Retour
                   </button>
                   <button type="submit" disabled={confirmerMutation.isPending}
-                    className="flex-1 py-4 bg-terracotta text-white rounded-xl font-semibold text-base
-                      flex items-center justify-center gap-2 hover:bg-terracotta/90 active:scale-[.98] transition-all disabled:opacity-60">
+                    className="flex-1 py-4 bg-terracotta text-white rounded-2xl font-semibold text-base
+                      flex items-center justify-center gap-2 hover:bg-terracotta/90 active:scale-[.98]
+                      transition-all disabled:opacity-60">
                     {confirmerMutation.isPending
                       ? <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Traitement…</>
                       : <><FaShieldAlt size={15} /> Confirmer {total.toLocaleString('fr-FR')} FCFA</>}
@@ -489,13 +803,15 @@ export default function Reservation() {
           )}
         </div>
 
-        {/* ── Récapitulatif ── */}
+        {/* ── Récapitulatif sidebar ── */}
         <aside className="lg:col-span-2 space-y-4">
-          <div className="bg-white rounded-2xl shadow-sm overflow-hidden sticky top-28">
+          <div className="bg-white rounded-3xl shadow-sm overflow-hidden sticky top-28 border border-earth/10">
+
             {resource?.image_principale_url && (
-              <div className="h-36 overflow-hidden">
+              <div className="h-40 overflow-hidden relative">
                 <img src={resource.image_principale_url} alt={resource.titre || resource.nom}
                   className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-dark/40 to-transparent" />
               </div>
             )}
 
@@ -503,12 +819,12 @@ export default function Reservation() {
               <div className="text-xs uppercase tracking-widest text-earth mb-1">
                 {type === 'hebergement' ? 'Hébergement' : 'Événement'}
               </div>
-              <div className="font-display text-lg text-dark leading-tight mb-4">
+              <div className="font-display text-lg text-dark leading-tight mb-5">
                 {resource?.titre || resource?.nom}
               </div>
 
               {reservation?.numero_reservation && (
-                <div className="bg-sand rounded-xl p-3 text-center mb-4">
+                <div className="bg-sand rounded-2xl p-3 text-center mb-5">
                   <div className="text-xs text-earth mb-1">Référence</div>
                   <div className="font-mono font-bold text-terracotta tracking-wider text-sm">
                     {reservation.numero_reservation}
@@ -519,13 +835,19 @@ export default function Reservation() {
               <div className="space-y-2.5 text-sm">
                 {type === 'hebergement' && dateDebut && dateFin && (
                   <div className="flex justify-between text-earth">
-                    <span className="flex items-center gap-1.5"><FaCalendarAlt size={10} /> {nbNuits} nuit{nbNuits > 1 ? 's' : ''}</span>
+                    <span className="flex items-center gap-1.5">
+                      <FaCalendarAlt size={10} />
+                      {nbNuits} nuit{nbNuits > 1 ? 's' : ''}
+                    </span>
                     <span className="text-dark">{prix.toLocaleString('fr-FR')} × {nbNuits}</span>
                   </div>
                 )}
                 {type === 'evenement' && (
                   <div className="flex justify-between text-earth">
-                    <span className="flex items-center gap-1.5"><FaUsers size={10} /> {nbPersonnes} place{nbPersonnes > 1 ? 's' : ''}</span>
+                    <span className="flex items-center gap-1.5">
+                      <FaUsers size={10} />
+                      {nbPersonnes} place{nbPersonnes > 1 ? 's' : ''}
+                    </span>
                     <span className="text-dark">{prix.toLocaleString('fr-FR')} × {nbPersonnes}</span>
                   </div>
                 )}
@@ -541,13 +863,13 @@ export default function Reservation() {
                   <span>Taxes (3%)</span>
                   <span className="text-dark">{taxes.toLocaleString('fr-FR')} FCFA</span>
                 </div>
-                <div className="flex justify-between font-bold text-base border-t border-earth/20 pt-3 mt-3">
+                <div className="flex justify-between font-bold text-base border-t border-earth/20 pt-3 mt-1">
                   <span className="flex items-center gap-1.5"><FaTag size={10} /> Total TTC</span>
                   <span className="text-terracotta">{total.toLocaleString('fr-FR')} FCFA</span>
                 </div>
               </div>
 
-              <div className="mt-4 pt-4 border-t border-earth/10 flex items-center gap-2 text-xs text-earth/60">
+              <div className="mt-4 pt-4 border-t border-earth/10 flex items-center gap-1.5 text-xs text-earth/60">
                 <FaLock size={9} /> Annulation gratuite avant 48h
               </div>
             </div>
