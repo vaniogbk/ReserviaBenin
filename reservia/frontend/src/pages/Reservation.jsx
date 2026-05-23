@@ -6,21 +6,42 @@ import { hebergementApi, evenementApi, reservationApi, paiementApi } from '../se
 import toast from 'react-hot-toast'
 import {
   FaCreditCard, FaMobileAlt, FaLock, FaCheckCircle,
-  FaCalendarAlt, FaUsers, FaTag, FaFlask
+  FaCalendarAlt, FaUsers, FaTag, FaFlask, FaArrowLeft,
+  FaArrowRight, FaShieldAlt, FaBolt, FaCheck
 } from 'react-icons/fa'
 
-const STEPS = ['Séjour', 'Coordonnées', 'Paiement', 'Confirmation']
-
-const METHODES = [
-  { id: 'mtn_momo',   label: 'MTN MoMo',   type: 'mobile', couleur: 'bg-yellow-400' },
-  { id: 'moov_money', label: 'Moov Money',  type: 'mobile', couleur: 'bg-blue-500' },
-  { id: 'fedapay',    label: 'Carte bancaire', type: 'carte', couleur: 'bg-dark' },
-  { id: 'cinetpay',   label: 'CinetPay',    type: 'carte', couleur: 'bg-orange-500' },
+const STEPS = [
+  { label: 'Séjour',        icon: FaCalendarAlt },
+  { label: 'Coordonnées',   icon: FaUsers },
+  { label: 'Paiement',      icon: FaCreditCard },
+  { label: 'Confirmation',  icon: FaCheckCircle },
 ]
 
-// Formate un numéro de carte avec espaces : "4242 4242 4242 4242"
+const METHODES = [
+  { id: 'mtn_momo',    label: 'MTN MoMo',      sousTitre: 'Mobile Money',   bg: 'from-yellow-400 to-yellow-500',  border: 'border-yellow-400', text: 'text-yellow-900' },
+  { id: 'moov_money',  label: 'Moov Money',    sousTitre: 'Mobile Money',   bg: 'from-blue-500 to-blue-600',      border: 'border-blue-500',   text: 'text-white' },
+  { id: 'fedapay',     label: 'Carte bancaire', sousTitre: 'Visa / Mastercard', bg: 'from-slate-700 to-slate-900', border: 'border-slate-700',  text: 'text-white' },
+  { id: 'cinetpay',    label: 'CinetPay',       sousTitre: 'Carte / Mobile',  bg: 'from-orange-500 to-red-500',   border: 'border-orange-500', text: 'text-white' },
+]
+
 function formatCard(val) {
   return val.replace(/\D/g, '').slice(0, 16).replace(/(.{4})/g, '$1 ').trim()
+}
+
+function Counter({ value, onChange, min = 1, max = 20 }) {
+  return (
+    <div className="flex items-center gap-4">
+      <button type="button" onClick={() => onChange(Math.max(min, value - 1))}
+        className="w-10 h-10 rounded-full border-2 border-earth/40 flex items-center justify-center
+          text-earth hover:border-dark hover:text-dark transition-all font-bold text-lg disabled:opacity-30"
+        disabled={value <= min}>−</button>
+      <span className="w-10 text-center font-bold text-xl text-dark">{value}</span>
+      <button type="button" onClick={() => onChange(Math.min(max, value + 1))}
+        className="w-10 h-10 rounded-full border-2 border-earth/40 flex items-center justify-center
+          text-earth hover:border-dark hover:text-dark transition-all font-bold text-lg disabled:opacity-30"
+        disabled={value >= max}>+</button>
+    </div>
+  )
 }
 
 export default function Reservation() {
@@ -31,53 +52,39 @@ export default function Reservation() {
   const [paiementId, setPaiementId] = useState(null)
   const [reservation, setReservation] = useState(null)
   const [cardNum, setCardNum] = useState('')
+  const [nbPersonnes, setNbPersonnes] = useState(2)
 
-  const {
-    register, handleSubmit, watch,
-    formState: { errors },
-  } = useForm({ defaultValues: { nb_personnes: 2 } })
+  const { register, handleSubmit, watch, formState: { errors } } = useForm()
 
-  // Chargement de la ressource (hôtel ou événement)
   const { data, isLoading } = useQuery({
     queryKey: [type, id],
     queryFn: () => type === 'hebergement' ? hebergementApi.detail(id) : evenementApi.detail(id),
   })
   const resource = data?.data
 
-  // Calcul dynamique du total
-  const dateDebut  = watch('date_debut')
-  const dateFin    = watch('date_fin')
-  const nbPersonnes = parseInt(watch('nb_personnes') || 2)
-  const prix = parseFloat(resource?.prix_par_nuit || resource?.prix_entree || 0)
-  const nbNuits = dateDebut && dateFin
+  const dateDebut = watch('date_debut')
+  const dateFin   = watch('date_fin')
+  const prix      = parseFloat(resource?.prix_par_nuit || resource?.prix_entree || 0)
+  const nbNuits   = dateDebut && dateFin
     ? Math.max(1, Math.ceil((new Date(dateFin) - new Date(dateDebut)) / 86_400_000))
     : 1
-  const montantBase = type === 'hebergement' ? prix * nbNuits : prix * nbPersonnes
+  const montantBase  = type === 'hebergement' ? prix * nbNuits : prix * nbPersonnes
   const fraisService = Math.round(montantBase * 0.05)
   const taxes        = Math.round(montantBase * 0.03)
   const total        = montantBase + fraisService + taxes
 
-  // Étape 1 → 2 : Créer la réservation
   const creerMutation = useMutation({
     mutationFn: reservationApi.creer,
-    onSuccess: ({ data: d }) => {
-      setReservation(d)
-      setStep(2)
-    },
+    onSuccess: ({ data: d }) => { setReservation(d); setStep(2) },
     onError: (e) => toast.error(e.response?.data?.message || 'Erreur lors de la réservation.'),
   })
 
-  // Étape 2 : Initier le paiement (obtenir un paiement_id)
   const initierMutation = useMutation({
     mutationFn: paiementApi.initier,
-    onSuccess: ({ data: d }) => {
-      setPaiementId(d.paiement_id)
-      setStep(3)
-    },
+    onSuccess: ({ data: d }) => { setPaiementId(d.paiement_id); setStep(3) },
     onError: (e) => toast.error(e.response?.data?.message || 'Erreur d\'initiation du paiement.'),
   })
 
-  // Étape 3 : Confirmer le paiement (sandbox)
   const confirmerMutation = useMutation({
     mutationFn: ({ id: pid, payload }) => paiementApi.confirmer(pid, payload),
     onSuccess: ({ data: d }) => {
@@ -87,291 +94,367 @@ export default function Reservation() {
     onError: (e) => toast.error(e.response?.data?.message || 'Échec du paiement.'),
   })
 
-  const onSubmitSejour = () => setStep(1)
-
   const onSubmitCoordonnees = (formData) => {
-    const payload = {
-      type,
-      notes_particulieres: formData.notes_particulieres,
-    }
+    const payload = { type, notes_particulieres: formData.notes_particulieres }
     if (type === 'hebergement') {
-      payload.hebergement_id = parseInt(id)
-      payload.date_debut     = formData.date_debut
-      payload.date_fin       = formData.date_fin
-      payload.nombre_guests  = nbPersonnes
+      Object.assign(payload, {
+        hebergement_id: parseInt(id),
+        date_debut:     formData.date_debut,
+        date_fin:       formData.date_fin,
+        nombre_guests:  nbPersonnes,
+      })
     } else {
-      payload.evenement_id   = parseInt(id)
-      payload.nombre_places  = nbPersonnes
+      Object.assign(payload, {
+        evenement_id:  parseInt(id),
+        nombre_places: nbPersonnes,
+      })
     }
     creerMutation.mutate(payload)
   }
 
   const onChoisirMethode = () => {
     if (!reservation) return
-    initierMutation.mutate({
-      numero_reservation: reservation.numero_reservation,
-      methode,
-    })
+    initierMutation.mutate({ numero_reservation: reservation.numero_reservation, methode })
   }
 
   const onConfirmerPaiement = (formData) => {
     const methodeInfo = METHODES.find(m => m.id === methode)
-    const payload = methodeInfo?.type === 'carte'
-      ? {
-          numero_carte: cardNum.replace(/\s/g, ''),
-          expiration:   formData.expiration,
-          cvv:          formData.cvv,
-          nom_carte:    formData.nom_carte,
-        }
+    const payload = methodeInfo?.id === 'fedapay' || methodeInfo?.id === 'cinetpay'
+      ? { numero_carte: cardNum.replace(/\s/g, ''), expiration: formData.expiration, cvv: formData.cvv, nom_carte: formData.nom_carte }
       : { telephone: formData.telephone }
-
     confirmerMutation.mutate({ id: paiementId, payload })
   }
 
   if (isLoading) return (
-    <div className="pt-16 flex items-center justify-center h-screen">
-      <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent" />
+    <div className="pt-16 flex items-center justify-center h-screen bg-sand">
+      <div className="flex flex-col items-center gap-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-terracotta border-t-transparent" />
+        <p className="text-earth text-sm">Chargement…</p>
+      </div>
     </div>
   )
 
   const methodeCourante = METHODES.find(m => m.id === methode)
-  const estCarte = methodeCourante?.type === 'carte'
+  const estCarte = methode === 'fedapay' || methode === 'cinetpay'
 
   return (
     <div className="pt-16 min-h-screen bg-sand">
-      {/* Barre de progression */}
-      <div className="bg-white border-b border-earth/20 sticky top-16 z-20">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center">
-          {STEPS.map((s, i) => (
-            <div key={s} className="flex items-center flex-1 last:flex-none">
-              <div className={`flex items-center gap-2 text-sm font-medium whitespace-nowrap
-                ${i < step ? 'text-green-600' : i === step ? 'text-dark' : 'text-earth/40'}`}>
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0
-                  ${i < step ? 'bg-green-500 text-white' : i === step ? 'bg-dark text-white' : 'bg-earth/10 text-earth/40'}`}>
-                  {i < step ? <FaCheckCircle size={12} /> : i + 1}
+
+      {/* ── Barre de progression ── */}
+      <div className="bg-white border-b border-earth/15 sticky top-16 z-20 shadow-sm">
+        <div className="max-w-5xl mx-auto px-4 py-5">
+          <div className="flex items-center justify-between relative">
+            {/* Ligne de fond */}
+            <div className="absolute top-4 left-8 right-8 h-0.5 bg-earth/15 z-0" />
+            {/* Ligne de progression */}
+            <div className="absolute top-4 left-8 h-0.5 bg-terracotta z-0 transition-all duration-500"
+              style={{ width: `calc(${(step / (STEPS.length - 1)) * 100}% - 4rem)` }} />
+
+            {STEPS.map((s, i) => {
+              const Icon = s.icon
+              const done    = i < step
+              const current = i === step
+              return (
+                <div key={s.label} className="relative z-10 flex flex-col items-center gap-1.5">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300
+                    ${done    ? 'bg-terracotta text-white shadow-md shadow-terracotta/30'
+                    : current ? 'bg-dark text-white shadow-md shadow-dark/30'
+                    :           'bg-white border-2 border-earth/30 text-earth/40'}`}>
+                    {done ? <FaCheck size={12} /> : <Icon size={12} />}
+                  </div>
+                  <span className={`text-xs font-medium whitespace-nowrap hidden sm:block
+                    ${done ? 'text-terracotta' : current ? 'text-dark' : 'text-earth/40'}`}>
+                    {s.label}
+                  </span>
                 </div>
-                <span className="hidden sm:inline">{s}</span>
-              </div>
-              {i < STEPS.length - 1 && <div className="flex-1 h-px bg-earth/15 mx-3" />}
-            </div>
-          ))}
+              )
+            })}
+          </div>
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="max-w-5xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-5 gap-8">
+
         {/* ── Formulaire principal ── */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-3 space-y-6">
 
-          {/* ÉTAPE 0 : Dates & options */}
+          {/* ÉTAPE 0 : Séjour */}
           {step === 0 && resource && (
-            <form onSubmit={handleSubmit(onSubmitSejour)} className="bg-white rounded-2xl p-6 shadow-sm">
-              <h2 className="font-display text-2xl text-dark mb-6 flex items-center gap-2">
-                <FaCalendarAlt className="text-terracotta text-xl" /> Votre séjour
-              </h2>
+            <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+              <div className="bg-gradient-to-r from-dark to-dark/80 text-white p-6">
+                <h2 className="font-display text-2xl font-light mb-1">Votre séjour</h2>
+                <p className="text-earth/60 text-sm">{resource.titre || resource.nom}</p>
+              </div>
+              <div className="p-6 space-y-6">
 
-              {type === 'hebergement' && (
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label className="form-label">Arrivée *</label>
-                    <input type="date" className="form-input"
-                      min={new Date().toISOString().split('T')[0]}
-                      {...register('date_debut', { required: 'Requis' })} />
-                    {errors.date_debut && <p className="text-red-500 text-xs mt-1">{errors.date_debut.message}</p>}
+                {type === 'hebergement' && (
+                  <div className="grid grid-cols-2 gap-4">
+                    {[
+                      { name: 'date_debut', label: 'Arrivée', min: new Date().toISOString().split('T')[0] },
+                      { name: 'date_fin',   label: 'Départ',  min: dateDebut || new Date().toISOString().split('T')[0] },
+                    ].map(({ name, label, min }) => (
+                      <div key={name}>
+                        <label className="block text-xs font-semibold text-earth uppercase tracking-wider mb-2">
+                          {label}
+                        </label>
+                        <div className="relative">
+                          <FaCalendarAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-earth/60" size={14} />
+                          <input type="date" className="w-full pl-9 pr-3 py-3 border border-earth/20 rounded-xl
+                            focus:outline-none focus:ring-2 focus:ring-dark/20 focus:border-dark text-sm bg-sand/50"
+                            min={min} {...register(name, { required: 'Requis' })} />
+                        </div>
+                        {errors[name] && <p className="text-red-500 text-xs mt-1">{errors[name].message}</p>}
+                      </div>
+                    ))}
                   </div>
-                  <div>
-                    <label className="form-label">Départ *</label>
-                    <input type="date" className="form-input"
-                      min={dateDebut || new Date().toISOString().split('T')[0]}
-                      {...register('date_fin', { required: 'Requis' })} />
-                    {errors.date_fin && <p className="text-red-500 text-xs mt-1">{errors.date_fin.message}</p>}
-                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs font-semibold text-earth uppercase tracking-wider mb-3">
+                    {type === 'hebergement' ? 'Voyageurs' : 'Nombre de places'}
+                  </label>
+                  <Counter value={nbPersonnes} onChange={setNbPersonnes} />
                 </div>
-              )}
 
-              <div className="mb-4">
-                <label className="form-label flex items-center gap-1">
-                  <FaUsers className="text-earth" /> {type === 'hebergement' ? 'Nombre de voyageurs' : 'Nombre de places'}
-                </label>
-                <select {...register('nb_personnes')} className="form-input">
-                  {[1,2,3,4,5,6,8,10].map(n => (
-                    <option key={n} value={n}>{n} personne{n > 1 ? 's' : ''}</option>
-                  ))}
-                </select>
+                <div>
+                  <label className="block text-xs font-semibold text-earth uppercase tracking-wider mb-2">
+                    Demandes spéciales
+                  </label>
+                  <textarea {...register('notes_particulieres')} rows={3}
+                    className="w-full px-4 py-3 border border-earth/20 rounded-xl focus:outline-none
+                      focus:ring-2 focus:ring-dark/20 focus:border-dark text-sm resize-none bg-sand/30"
+                    placeholder="Allergie, lit bébé, arrivée tardive…" />
+                </div>
+
+                <button onClick={() => setStep(1)}
+                  className="w-full bg-dark text-white rounded-xl py-4 font-semibold flex items-center
+                    justify-center gap-2 hover:bg-dark/90 active:scale-[.98] transition-all">
+                  Continuer <FaArrowRight size={14} />
+                </button>
               </div>
-
-              <div className="mb-6">
-                <label className="form-label">Demandes spéciales (optionnel)</label>
-                <textarea {...register('notes_particulieres')} rows={3}
-                  className="form-input resize-none"
-                  placeholder="Allergie, lit bébé, arrivée tardive..." />
-              </div>
-
-              <button type="submit" className="btn-primary w-full justify-center py-4">
-                Continuer →
-              </button>
-            </form>
+            </div>
           )}
 
           {/* ÉTAPE 1 : Coordonnées */}
           {step === 1 && (
-            <form onSubmit={handleSubmit(onSubmitCoordonnees)} className="bg-white rounded-2xl p-6 shadow-sm">
-              <h2 className="font-display text-2xl text-dark mb-6">Vos coordonnées</h2>
+            <form onSubmit={handleSubmit(onSubmitCoordonnees)}
+              className="bg-white rounded-2xl shadow-sm overflow-hidden">
+              <div className="bg-gradient-to-r from-dark to-dark/80 text-white p-6">
+                <h2 className="font-display text-2xl font-light mb-1">Vos coordonnées</h2>
+                <p className="text-earth/60 text-sm">Ces informations sont sécurisées et chiffrées</p>
+              </div>
+              <div className="p-6 space-y-4">
 
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="form-label">Prénom *</label>
-                  <input {...register('prenom', { required: 'Requis' })} className="form-input" placeholder="Kofi" />
-                  {errors.prenom && <p className="text-red-500 text-xs mt-1">{errors.prenom.message}</p>}
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { name: 'prenom', label: 'Prénom', placeholder: 'Kofi' },
+                    { name: 'nom',    label: 'Nom',    placeholder: 'Mensah' },
+                  ].map(({ name, label, placeholder }) => (
+                    <div key={name}>
+                      <label className="block text-xs font-semibold text-earth uppercase tracking-wider mb-2">{label} *</label>
+                      <input {...register(name, { required: 'Requis' })}
+                        className="w-full px-4 py-3 border border-earth/20 rounded-xl focus:outline-none
+                          focus:ring-2 focus:ring-dark/20 focus:border-dark text-sm"
+                        placeholder={placeholder} />
+                      {errors[name] && <p className="text-red-500 text-xs mt-1">{errors[name].message}</p>}
+                    </div>
+                  ))}
                 </div>
+
                 <div>
-                  <label className="form-label">Nom *</label>
-                  <input {...register('nom', { required: 'Requis' })} className="form-input" placeholder="Mensah" />
-                  {errors.nom && <p className="text-red-500 text-xs mt-1">{errors.nom.message}</p>}
+                  <label className="block text-xs font-semibold text-earth uppercase tracking-wider mb-2">Email *</label>
+                  <input type="email" {...register('email', { required: 'Requis' })}
+                    className="w-full px-4 py-3 border border-earth/20 rounded-xl focus:outline-none
+                      focus:ring-2 focus:ring-dark/20 focus:border-dark text-sm"
+                    placeholder="kofi@exemple.com" />
+                  {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
                 </div>
-              </div>
 
-              <div className="mb-4">
-                <label className="form-label">Email *</label>
-                <input type="email" {...register('email', { required: 'Requis' })} className="form-input"
-                  placeholder="kofi@exemple.com" />
-                {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
-              </div>
+                <div>
+                  <label className="block text-xs font-semibold text-earth uppercase tracking-wider mb-2">Téléphone</label>
+                  <div className="flex gap-2">
+                    <span className="px-4 py-3 border border-earth/20 rounded-xl bg-sand/50 text-sm font-semibold text-dark flex-shrink-0">+229</span>
+                    <input type="tel" {...register('telephone')}
+                      className="flex-1 px-4 py-3 border border-earth/20 rounded-xl focus:outline-none
+                        focus:ring-2 focus:ring-dark/20 focus:border-dark text-sm"
+                      placeholder="96 00 00 00" />
+                  </div>
+                </div>
 
-              <div className="mb-6">
-                <label className="form-label">Téléphone</label>
-                <input type="tel" {...register('telephone')} className="form-input"
-                  placeholder="+229 96 00 00 00" />
-              </div>
-
-              <div className="flex gap-3">
-                <button type="button" onClick={() => setStep(0)} className="btn-outline flex-1 justify-center">
-                  ← Retour
-                </button>
-                <button type="submit" disabled={creerMutation.isPending}
-                  className="btn-primary flex-1 justify-center">
-                  {creerMutation.isPending ? 'Traitement…' : 'Continuer →'}
-                </button>
+                <div className="flex gap-3 pt-2">
+                  <button type="button" onClick={() => setStep(0)}
+                    className="flex-1 py-3.5 border-2 border-earth/30 rounded-xl text-dark font-semibold
+                      flex items-center justify-center gap-2 hover:border-dark transition-all">
+                    <FaArrowLeft size={13} /> Retour
+                  </button>
+                  <button type="submit" disabled={creerMutation.isPending}
+                    className="flex-1 py-3.5 bg-dark text-white rounded-xl font-semibold flex items-center
+                      justify-center gap-2 hover:bg-dark/90 active:scale-[.98] transition-all disabled:opacity-60">
+                    {creerMutation.isPending ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Traitement…</> : <>Continuer <FaArrowRight size={13} /></>}
+                  </button>
+                </div>
               </div>
             </form>
           )}
 
-          {/* ÉTAPE 2 : Choix méthode de paiement */}
+          {/* ÉTAPE 2 : Choix méthode */}
           {step === 2 && reservation && (
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <h2 className="font-display text-2xl text-dark mb-2">Moyen de paiement</h2>
-              <p className="text-earth text-sm mb-6">Choisissez comment vous souhaitez régler votre réservation.</p>
+            <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+              <div className="bg-gradient-to-r from-dark to-dark/80 text-white p-6">
+                <h2 className="font-display text-2xl font-light mb-1">Moyen de paiement</h2>
+                <p className="text-earth/60 text-sm">Choisissez votre méthode préférée</p>
+              </div>
+              <div className="p-6">
 
-              <div className="grid grid-cols-2 gap-3 mb-6">
-                {METHODES.map(m => (
-                  <button key={m.id} type="button" onClick={() => setMethode(m.id)}
-                    className={`p-4 rounded-xl border-2 text-left transition-all
-                      ${methode === m.id ? 'border-dark bg-dark text-white' : 'border-earth/30 hover:border-dark bg-white'}`}>
-                    <div className={`w-8 h-8 rounded-lg ${methode === m.id ? 'bg-white/20' : m.couleur}
-                      flex items-center justify-center mb-2`}>
-                      {m.type === 'mobile'
-                        ? <FaMobileAlt className={methode === m.id ? 'text-white' : 'text-white'} size={14} />
-                        : <FaCreditCard className={methode === m.id ? 'text-white' : 'text-white'} size={14} />
-                      }
-                    </div>
-                    <div className="text-sm font-semibold">{m.label}</div>
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                  {METHODES.map(m => (
+                    <button key={m.id} type="button" onClick={() => setMethode(m.id)}
+                      className={`relative p-4 rounded-2xl border-2 text-left transition-all overflow-hidden
+                        ${methode === m.id ? `border-transparent bg-gradient-to-br ${m.bg} text-white shadow-lg` : 'border-earth/20 bg-white hover:border-earth/50'}`}>
+                      {methode === m.id && (
+                        <div className="absolute top-2 right-2 w-5 h-5 bg-white/20 rounded-full flex items-center justify-center">
+                          <FaCheck size={9} className="text-white" />
+                        </div>
+                      )}
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-3
+                        ${methode === m.id ? 'bg-white/20' : 'bg-sand'}`}>
+                        {m.id === 'fedapay' || m.id === 'cinetpay'
+                          ? <FaCreditCard size={16} className={methode === m.id ? 'text-white' : 'text-earth'} />
+                          : <FaMobileAlt size={16} className={methode === m.id ? 'text-white' : 'text-earth'} />}
+                      </div>
+                      <div className={`font-bold text-sm ${methode === m.id ? 'text-white' : 'text-dark'}`}>{m.label}</div>
+                      <div className={`text-xs mt-0.5 ${methode === m.id ? 'text-white/70' : 'text-earth'}`}>{m.sousTitre}</div>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-100 rounded-xl mb-6 text-sm">
+                  <FaShieldAlt className="text-green-500 flex-shrink-0" size={16} />
+                  <div>
+                    <span className="font-semibold text-green-700">Paiement 100% sécurisé</span>
+                    <p className="text-green-600 text-xs mt-0.5">Vos données sont chiffrées AES-256 et jamais stockées</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => setStep(1)}
+                    className="flex-1 py-3.5 border-2 border-earth/30 rounded-xl text-dark font-semibold
+                      flex items-center justify-center gap-2 hover:border-dark transition-all">
+                    <FaArrowLeft size={13} /> Retour
                   </button>
-                ))}
-              </div>
-
-              <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl p-3 mb-6 text-sm text-green-700">
-                <FaLock size={12} />
-                <span>Paiement sécurisé · Données chiffrées AES-256</span>
-              </div>
-
-              <div className="flex gap-3">
-                <button type="button" onClick={() => setStep(1)} className="btn-outline flex-1 justify-center">
-                  ← Retour
-                </button>
-                <button onClick={onChoisirMethode} disabled={initierMutation.isPending}
-                  className="btn-terracotta flex-1 justify-center">
-                  {initierMutation.isPending ? 'Traitement…' : `Payer ${total.toLocaleString('fr-FR')} FCFA →`}
-                </button>
+                  <button onClick={onChoisirMethode} disabled={initierMutation.isPending}
+                    className="flex-1 py-3.5 bg-terracotta text-white rounded-xl font-semibold flex items-center
+                      justify-center gap-2 hover:bg-terracotta/90 active:scale-[.98] transition-all disabled:opacity-60">
+                    {initierMutation.isPending
+                      ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Traitement…</>
+                      : <><FaBolt size={13} /> Payer {total.toLocaleString('fr-FR')} FCFA</>}
+                  </button>
+                </div>
               </div>
             </div>
           )}
 
-          {/* ÉTAPE 3 : Formulaire de paiement sandbox */}
+          {/* ÉTAPE 3 : Saisie paiement */}
           {step === 3 && paiementId && (
-            <form onSubmit={handleSubmit(onConfirmerPaiement)} className="bg-white rounded-2xl p-6 shadow-sm">
-              {/* Badge sandbox */}
-              <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl p-3 mb-6">
-                <FaFlask className="text-amber-500" />
-                <div>
-                  <span className="text-amber-700 font-semibold text-sm">Mode TEST (Sandbox)</span>
-                  <p className="text-amber-600 text-xs">
-                    {estCarte
-                      ? 'Utilisez le numéro test : 4242 4242 4242 4242, expiry 12/26, CVV 123'
-                      : 'Entrez n\'importe quel numéro de téléphone béninois (ex: +229 96 000 000)'}
-                  </p>
+            <form onSubmit={handleSubmit(onConfirmerPaiement)}
+              className="bg-white rounded-2xl shadow-sm overflow-hidden">
+              <div className="bg-gradient-to-r from-dark to-dark/80 text-white p-6">
+                <h2 className="font-display text-2xl font-light mb-1 flex items-center gap-2">
+                  {estCarte ? <FaCreditCard size={20} /> : <FaMobileAlt size={20} />}
+                  {estCarte ? 'Paiement par carte' : `Paiement ${methodeCourante?.label}`}
+                </h2>
+                <div className="flex items-center gap-2 mt-2">
+                  <FaFlask className="text-amber-400" size={12} />
+                  <span className="text-amber-300 text-xs font-medium">Mode Sandbox — Simulation uniquement</span>
                 </div>
               </div>
+              <div className="p-6 space-y-5">
 
-              <h2 className="font-display text-2xl text-dark mb-6 flex items-center gap-2">
-                {estCarte ? <FaCreditCard className="text-terracotta" /> : <FaMobileAlt className="text-terracotta" />}
-                {estCarte ? 'Paiement par carte' : `Paiement via ${methodeCourante?.label}`}
-              </h2>
+                {/* Astuce sandbox */}
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm">
+                  <p className="font-semibold text-amber-700 mb-1">Données de test</p>
+                  <p className="text-amber-600 text-xs">
+                    {estCarte
+                      ? 'Carte : 4242 4242 4242 4242 · Expiry : 12/26 · CVV : 123'
+                      : 'Téléphone : 96 000 000 (8 chiffres, sans indicatif)'}
+                  </p>
+                </div>
 
-              {estCarte ? (
-                <>
-                  {/* Visuel carte */}
-                  <div className="bg-gradient-to-br from-dark to-earth rounded-2xl p-5 mb-6 text-white relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -translate-y-10 translate-x-10" />
-                    <div className="text-xs tracking-widest opacity-60 mb-4 uppercase">Carte de paiement</div>
-                    <div className="font-mono text-xl tracking-[4px] mb-4">
-                      {cardNum || '•••• •••• •••• ••••'}
+                {estCarte ? (
+                  <>
+                    {/* Visuel carte */}
+                    <div className="bg-gradient-to-br from-dark via-dark/90 to-earth/60 rounded-2xl p-6 text-white relative overflow-hidden select-none">
+                      <div className="absolute -top-8 -right-8 w-40 h-40 bg-white/5 rounded-full" />
+                      <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-white/5 rounded-full" />
+                      <div className="relative z-10">
+                        <div className="flex justify-between items-start mb-6">
+                          <div className="text-xs tracking-[3px] opacity-50 uppercase">Réservation</div>
+                          <FaCreditCard className="opacity-40" size={28} />
+                        </div>
+                        <div className="font-mono text-xl tracking-[6px] mb-5 min-h-7">
+                          {cardNum || '•••• •••• •••• ••••'}
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <div>
+                            <div className="text-xs opacity-50 mb-0.5">Titulaire</div>
+                            <div className="font-semibold uppercase tracking-wider text-sm">
+                              {watch('nom_carte') || '••••••••'}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-xs opacity-50 mb-0.5">Expire</div>
+                            <div className="font-mono">{watch('expiration') || 'MM/AA'}</div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="opacity-60">{watch('nom_carte') || 'TITULAIRE'}</span>
-                      <span>{watch('expiration') || 'MM/AA'}</span>
-                    </div>
-                  </div>
 
-                  <div className="mb-4">
-                    <label className="form-label">Numéro de carte *</label>
-                    <input type="text" className="form-input font-mono tracking-widest"
-                      placeholder="4242 4242 4242 4242"
-                      value={cardNum}
-                      onChange={e => setCardNum(formatCard(e.target.value))}
-                      maxLength={19} required />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 mb-4">
                     <div>
-                      <label className="form-label">Date d'expiration *</label>
-                      <input type="text" className="form-input" placeholder="MM/AA"
-                        {...register('expiration', {
-                          required: 'Requis',
-                          pattern: { value: /^\d{2}\/\d{2}$/, message: 'Format MM/AA' },
-                        })} maxLength={5} />
-                      {errors.expiration && <p className="text-red-500 text-xs mt-1">{errors.expiration.message}</p>}
+                      <label className="block text-xs font-semibold text-earth uppercase tracking-wider mb-2">Numéro de carte *</label>
+                      <input type="text" className="w-full px-4 py-3 border border-earth/20 rounded-xl
+                        focus:outline-none focus:ring-2 focus:ring-dark/20 focus:border-dark font-mono tracking-widest text-sm"
+                        placeholder="4242 4242 4242 4242"
+                        value={cardNum} onChange={e => setCardNum(formatCard(e.target.value))} maxLength={19} required />
                     </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-earth uppercase tracking-wider mb-2">Expiration *</label>
+                        <input type="text" className="w-full px-4 py-3 border border-earth/20 rounded-xl
+                          focus:outline-none focus:ring-2 focus:ring-dark/20 focus:border-dark font-mono text-sm"
+                          placeholder="MM/AA"
+                          {...register('expiration', { required: 'Requis', pattern: { value: /^\d{2}\/\d{2}$/, message: 'Format MM/AA' } })}
+                          maxLength={5} />
+                        {errors.expiration && <p className="text-red-500 text-xs mt-1">{errors.expiration.message}</p>}
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-earth uppercase tracking-wider mb-2">CVV *</label>
+                        <input type="text" className="w-full px-4 py-3 border border-earth/20 rounded-xl
+                          focus:outline-none focus:ring-2 focus:ring-dark/20 focus:border-dark font-mono text-sm"
+                          placeholder="123"
+                          {...register('cvv', { required: 'Requis', minLength: 3, maxLength: 4 })} maxLength={4} />
+                        {errors.cvv && <p className="text-red-500 text-xs mt-1">CVV invalide</p>}
+                      </div>
+                    </div>
+
                     <div>
-                      <label className="form-label">CVV *</label>
-                      <input type="text" className="form-input font-mono" placeholder="123"
-                        {...register('cvv', { required: 'Requis', minLength: 3, maxLength: 4 })}
-                        maxLength={4} />
-                      {errors.cvv && <p className="text-red-500 text-xs mt-1">CVV invalide</p>}
+                      <label className="block text-xs font-semibold text-earth uppercase tracking-wider mb-2">Nom sur la carte *</label>
+                      <input type="text" className="w-full px-4 py-3 border border-earth/20 rounded-xl
+                        focus:outline-none focus:ring-2 focus:ring-dark/20 focus:border-dark text-sm uppercase tracking-wider"
+                        placeholder="KOFI MENSAH"
+                        {...register('nom_carte', { required: 'Requis', minLength: 3 })} />
+                      {errors.nom_carte && <p className="text-red-500 text-xs mt-1">Requis</p>}
                     </div>
-                  </div>
-                  <div className="mb-6">
-                    <label className="form-label">Nom sur la carte *</label>
-                    <input type="text" className="form-input uppercase"
-                      placeholder="KOFI MENSAH"
-                      {...register('nom_carte', { required: 'Requis', minLength: 3 })} />
-                    {errors.nom_carte && <p className="text-red-500 text-xs mt-1">Requis</p>}
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="mb-6">
-                    <label className="form-label">Numéro de téléphone *</label>
+                  </>
+                ) : (
+                  <div>
+                    <label className="block text-xs font-semibold text-earth uppercase tracking-wider mb-2">
+                      Numéro {methodeCourante?.label} *
+                    </label>
                     <div className="flex gap-2">
-                      <span className="form-input w-24 text-center bg-sand text-dark font-semibold flex-shrink-0">+229</span>
-                      <input type="tel" className="form-input flex-1"
+                      <span className="px-4 py-3 border border-earth/20 rounded-xl bg-sand/50 text-sm font-bold text-dark flex-shrink-0">+229</span>
+                      <input type="tel" className="flex-1 px-4 py-3 border border-earth/20 rounded-xl
+                        focus:outline-none focus:ring-2 focus:ring-dark/20 focus:border-dark text-sm font-mono tracking-widest"
                         placeholder="96 00 00 00"
                         {...register('telephone', {
                           required: 'Requis',
@@ -379,76 +462,95 @@ export default function Reservation() {
                         })} maxLength={8} />
                     </div>
                     {errors.telephone && <p className="text-red-500 text-xs mt-1">{errors.telephone.message}</p>}
-                    <p className="text-earth text-xs mt-2">
-                      En mode test : confirmez directement sans OTP réel.
-                    </p>
                   </div>
-                </>
-              )}
+                )}
 
-              <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl p-3 mb-6">
-                <FaLock className="text-green-600" size={12} />
-                <span className="text-green-700 text-sm">Paiement sécurisé · {total.toLocaleString('fr-FR')} FCFA</span>
-              </div>
+                <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-100 rounded-xl">
+                  <FaLock className="text-green-500 flex-shrink-0" size={12} />
+                  <span className="text-green-700 text-xs">Connexion sécurisée SSL · {total.toLocaleString('fr-FR')} FCFA</span>
+                </div>
 
-              <div className="flex gap-3">
-                <button type="button" onClick={() => setStep(2)} className="btn-outline flex-1 justify-center">
-                  ← Retour
-                </button>
-                <button type="submit" disabled={confirmerMutation.isPending}
-                  className="btn-terracotta flex-1 justify-center py-4 text-base">
-                  {confirmerMutation.isPending
-                    ? 'Traitement en cours…'
-                    : `Confirmer ${total.toLocaleString('fr-FR')} FCFA`}
-                </button>
+                <div className="flex gap-3 pt-1">
+                  <button type="button" onClick={() => setStep(2)}
+                    className="flex-1 py-3.5 border-2 border-earth/30 rounded-xl text-dark font-semibold
+                      flex items-center justify-center gap-2 hover:border-dark transition-all">
+                    <FaArrowLeft size={13} /> Retour
+                  </button>
+                  <button type="submit" disabled={confirmerMutation.isPending}
+                    className="flex-1 py-4 bg-terracotta text-white rounded-xl font-semibold text-base
+                      flex items-center justify-center gap-2 hover:bg-terracotta/90 active:scale-[.98] transition-all disabled:opacity-60">
+                    {confirmerMutation.isPending
+                      ? <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Traitement…</>
+                      : <><FaShieldAlt size={15} /> Confirmer {total.toLocaleString('fr-FR')} FCFA</>}
+                  </button>
+                </div>
               </div>
             </form>
           )}
         </div>
 
         {/* ── Récapitulatif ── */}
-        <aside className="bg-white rounded-2xl shadow-sm overflow-hidden h-fit sticky top-28">
-          <div className="bg-dark text-white p-5">
-            <div className="text-xs uppercase tracking-widest opacity-60 mb-1">Récapitulatif</div>
-            <div className="font-display text-lg leading-snug">{resource?.titre || resource?.nom}</div>
-          </div>
+        <aside className="lg:col-span-2 space-y-4">
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden sticky top-28">
+            {resource?.image_principale_url && (
+              <div className="h-36 overflow-hidden">
+                <img src={resource.image_principale_url} alt={resource.titre || resource.nom}
+                  className="w-full h-full object-cover" />
+              </div>
+            )}
 
-          <div className="p-5 space-y-3 text-sm">
-            {reservation?.numero_reservation && (
-              <div className="bg-sand rounded-xl p-3 text-center mb-2">
-                <div className="text-xs text-earth mb-1">Référence</div>
-                <div className="font-mono font-bold text-terracotta tracking-wider">
-                  {reservation.numero_reservation}
+            <div className="p-5">
+              <div className="text-xs uppercase tracking-widest text-earth mb-1">
+                {type === 'hebergement' ? 'Hébergement' : 'Événement'}
+              </div>
+              <div className="font-display text-lg text-dark leading-tight mb-4">
+                {resource?.titre || resource?.nom}
+              </div>
+
+              {reservation?.numero_reservation && (
+                <div className="bg-sand rounded-xl p-3 text-center mb-4">
+                  <div className="text-xs text-earth mb-1">Référence</div>
+                  <div className="font-mono font-bold text-terracotta tracking-wider text-sm">
+                    {reservation.numero_reservation}
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2.5 text-sm">
+                {type === 'hebergement' && dateDebut && dateFin && (
+                  <div className="flex justify-between text-earth">
+                    <span className="flex items-center gap-1.5"><FaCalendarAlt size={10} /> {nbNuits} nuit{nbNuits > 1 ? 's' : ''}</span>
+                    <span className="text-dark">{prix.toLocaleString('fr-FR')} × {nbNuits}</span>
+                  </div>
+                )}
+                {type === 'evenement' && (
+                  <div className="flex justify-between text-earth">
+                    <span className="flex items-center gap-1.5"><FaUsers size={10} /> {nbPersonnes} place{nbPersonnes > 1 ? 's' : ''}</span>
+                    <span className="text-dark">{prix.toLocaleString('fr-FR')} × {nbPersonnes}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-earth/80">
+                  <span>Sous-total</span>
+                  <span className="text-dark">{montantBase.toLocaleString('fr-FR')} FCFA</span>
+                </div>
+                <div className="flex justify-between text-earth/80">
+                  <span>Frais service (5%)</span>
+                  <span className="text-dark">{fraisService.toLocaleString('fr-FR')} FCFA</span>
+                </div>
+                <div className="flex justify-between text-earth/80">
+                  <span>Taxes (3%)</span>
+                  <span className="text-dark">{taxes.toLocaleString('fr-FR')} FCFA</span>
+                </div>
+                <div className="flex justify-between font-bold text-base border-t border-earth/20 pt-3 mt-3">
+                  <span className="flex items-center gap-1.5"><FaTag size={10} /> Total TTC</span>
+                  <span className="text-terracotta">{total.toLocaleString('fr-FR')} FCFA</span>
                 </div>
               </div>
-            )}
 
-            {type === 'hebergement' && dateDebut && dateFin && (
-              <div className="flex justify-between text-earth">
-                <span className="flex items-center gap-1"><FaCalendarAlt size={10} /> {nbNuits} nuit{nbNuits > 1 ? 's' : ''}</span>
-                <span>{prix.toLocaleString('fr-FR')} × {nbNuits}</span>
+              <div className="mt-4 pt-4 border-t border-earth/10 flex items-center gap-2 text-xs text-earth/60">
+                <FaLock size={9} /> Annulation gratuite avant 48h
               </div>
-            )}
-
-            {type === 'evenement' && (
-              <div className="flex justify-between text-earth">
-                <span className="flex items-center gap-1"><FaUsers size={10} /> {nbPersonnes} place{nbPersonnes > 1 ? 's' : ''}</span>
-                <span>{prix.toLocaleString('fr-FR')} × {nbPersonnes}</span>
-              </div>
-            )}
-
-            <div className="flex justify-between"><span className="text-earth">Sous-total</span><span>{montantBase.toLocaleString('fr-FR')} FCFA</span></div>
-            <div className="flex justify-between"><span className="text-earth">Frais service (5%)</span><span>{fraisService.toLocaleString('fr-FR')} FCFA</span></div>
-            <div className="flex justify-between"><span className="text-earth">Taxes (3%)</span><span>{taxes.toLocaleString('fr-FR')} FCFA</span></div>
-
-            <div className="flex justify-between font-bold text-base border-t border-earth/20 pt-3">
-              <span className="flex items-center gap-1"><FaTag size={10} /> Total TTC</span>
-              <span className="text-terracotta">{total.toLocaleString('fr-FR')} FCFA</span>
             </div>
-
-            <p className="text-center text-xs text-earth pt-2 flex items-center justify-center gap-1">
-              <FaLock size={10} /> Annulation gratuite avant 48h
-            </p>
           </div>
         </aside>
       </div>
