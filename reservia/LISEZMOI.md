@@ -14,7 +14,7 @@ reservia/
 ```
 
 **URLs de production**
-- Frontend : https://frontend-orcin-one-96.vercel.app
+- Frontend : https://reservia-benin.vercel.app
 - Backend : https://reservia-backend-production.up.railway.app
 
 ---
