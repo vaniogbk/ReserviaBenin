@@ -15,6 +15,13 @@ function fmt(n) {
   return parseFloat(n || 0).toLocaleString('fr-FR')
 }
 
+// jsPDF ne supporte pas l'espace insécable (U+00A0) de toLocaleString('fr-FR')
+function fmtPDF(n) {
+  return Math.round(parseFloat(n || 0))
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+}
+
 function fmtDate(d) {
   if (!d) return '—'
   return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
@@ -22,12 +29,13 @@ function fmtDate(d) {
 
 function methodLabel(m) {
   const map = {
-    mtn_momo: 'MTN Mobile Money',
-    moov_money: 'Moov Money',
-    fedapay: 'FedaPay (Carte)',
-    cinetpay: 'CinetPay (Carte)',
+    mtn_momo:     'MTN Mobile Money',
+    moov_money:   'Moov Money',
+    fedapay:      'Carte bancaire (FedaPay)',
+    cinetpay:     'CinetPay (Carte)',
     carte_credit: 'Carte bancaire',
     mobile_money: 'Mobile Money',
+    paypal:       'PayPal',
   }
   return map[m] || m || '—'
 }
@@ -122,9 +130,13 @@ function genererPDF(r, ref) {
   if (r?.user?.prenom || r?.user?.nom)
     y = row('Nom complet', `${r.user.prenom || ''} ${r.user.nom || ''}`.trim(), y)
   if (r?.user?.email)
-    y = row('Email', r.user.email, y)
+    y = row('E-mail', r.user.email, y)
   if (r?.user?.telephone)
     y = row('Téléphone', r.user.telephone, y)
+  if (r?.user?.adresse)
+    y = row('Adresse', r.user.adresse, y)
+  if (r?.user?.ville)
+    y = row('Ville', r.user.ville, y)
 
   y += 4
   y = sectionTitle('Récapitulatif financier', y)
@@ -144,7 +156,7 @@ function genererPDF(r, ref) {
   doc.text('MONTANT TOTAL PAYÉ', margin + 6, y + 9)
   doc.setTextColor(255, 255, 255)
   doc.setFontSize(14)
-  doc.text(`${fmt(r?.prix_total)} FCFA`, W - margin - 6, y + 9, { align: 'right' })
+  doc.text(`${fmtPDF(r?.prix_total)} FCFA`, W - margin - 6, y + 9, { align: 'right' })
 
   // ── Footer ──
   y = 272
@@ -343,10 +355,14 @@ export default function Confirmation() {
             <p className="text-xs text-earth uppercase tracking-widest mb-4">Informations client</p>
             <InfoRow
               icon={FaUsers}
-              label="Nom"
+              label="Nom complet"
               value={`${r.user.prenom || ''} ${r.user.nom || ''}`.trim() || null}
             />
-            <InfoRow icon={FaEnvelope} label="Email" value={r.user.email} />
+            <InfoRow icon={FaEnvelope} label="E-mail" value={r.user.email} />
+            <InfoRow icon={FaEnvelope} label="Téléphone" value={r.user.telephone || null} />
+            {r.user.ville && (
+              <InfoRow icon={FaMapMarkerAlt} label="Ville" value={r.user.ville} />
+            )}
           </div>
         )}
 

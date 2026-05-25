@@ -1,307 +1,116 @@
-[CELEBRATE] **RESERVIA - AUDIT & CORRECTIONS COMPLÈTES (J1-J4)**
+# Réservia Bénin — Guide du projet
+
+Plateforme de réservation d'hébergements et d'événements au Bénin.  
+Backend Laravel 11 sur Railway · Frontend React 18 sur Vercel · E-mails via Brevo
 
 ---
 
-## [STATS] CE QUI A ÉTÉ FAIT
+## Architecture
 
-Vous aviez un projet qui faisait **51 problèmes critiques**. J'ai **corrigé TOUS les 51** en 4 jours complètement structurés.
+```
+reservia/
+├── backend/    Laravel 11, API REST, Sanctum, MySQL 8
+└── frontend/   React 18, Vite 5, TailwindCSS 3
+```
 
-### Jour 1 (CRITIQUES SÉCURITÉ)
-10 vulnérabilités éliminées qui auraient cassé le site en production:
-- [SECURE] Webhook paiement non signé → **exploitable pour vol d'argent**
-- [UNLOCK] Autorisation manquante → **admin pouvait supprimer n'importe quoi**
-- [RACE] Race condition → **double-booking événements possible**
-- [EMAIL] Email template crash → **confirmation emails ne s'envoyaient jamais**
-- Et 6 autres...
-
-### Jour 2-3 (MAJEURS SÉCURITÉ)
-10 problèmes graves qui auraient causé des incidents:
-- Token expirance jamais vérifiée → **sessions infinies**
-- Escalade privilège admin → **création infinie d'admins**
-- Pagination non validée → **DoS avec per_page=999999999**
-- Et 7 autres...
-
-### Jour 4 (INFRASTRUCTURE)
-21+ améliorations de production:
-- [DONE] Database indexes optimisés (8 nouveaux indexes)
-- [DONE] Migration automatisée prête
-- [DONE] CORS configuration
-- [DONE] Health check endpoint
-- [DONE] Deployment guide complet
-- [DONE] Environment validation
-- [DONE] Logging audit
-- Et +15 autres...
+**URLs de production**
+- Frontend : https://frontend-orcin-one-96.vercel.app
+- Backend : https://reservia-backend-production.up.railway.app
 
 ---
 
-## [FOLDER] FICHIERS À CONNAÎTRE
+## Lancement en local
 
-### Points d'Entrée
-```
-[GUIDE] CORRECTIONS_SUMMARY.md      ← Vue d'ensemble complète
-[GUIDE] CORRECTIONS_CHANGELOG.md     ← Détail chaque fix
-[GUIDE] DEPLOYMENT.md                ← Guide déploiement production
-[RUN] deploy.sh                    ← Script automatisé setup
-```
-
-### Fichiers Nouveaux (Backend)
-```
-[NEW] config/cors.php              ← CORS configuration
-[NEW] app/Http/Middleware/HandleCors.php
-[NEW] app/Providers/AuthServiceProvider.php  ← Policies
-[NEW] app/Console/Commands/CheckEnvironment.php
-[NEW] database/migrations/2024_01_01_000007_add_indexes.php
-[NEW] resources/views/emails/confirmation.blade.php
-```
-
-### Fichiers Nouveaux (Frontend)
-```
-[NEW] .env.example                 ← Template variables
-[NEW] validate-env.sh              ← Validateur bash
-```
-
-### Fichiers Modifiés (Backend - 13)
-```
-[SETUP] app/Http/Controllers/AuthController.php
-[SETUP] app/Http/Controllers/PaiementController.php
-[SETUP] app/Http/Controllers/HebergementController.php
-[SETUP] app/Http/Controllers/EvenementController.php
-[SETUP] app/Http/Controllers/ReservationController.php
-[SETUP] app/Http/Controllers/Admin/DashboardController.php
-[SETUP] app/Jobs/EnvoyerConfirmationEmail.php
-[SETUP] routes/api.php
-[SETUP] .env.example
-(+ 4 nouveaux fichiers)
-```
-
-### Fichiers Modifiés (Frontend - 4)
-```
-[SETUP] src/context/AuthContext.jsx
-[SETUP] src/services/api.js
-[SETUP] src/App.jsx
-[SETUP] index.html
-```
-
----
-
-## [RUN] COMMENCER
-
-### Pour comprendre les changements
+### Backend
 ```bash
-# Lire dans cet ordre:
-1. CORRECTIONS_SUMMARY.md       # Vue d'ensemble 5 min
-2. CORRECTIONS_CHANGELOG.md     # Détail complet 20 min
-3. DEPLOYMENT.md                # Prêt pour production? 15 min
+cd reservia/backend
+cp .env.example .env          # renseigner DB_* et BREVO_API_KEY
+composer install
+php artisan key:generate
+php artisan migrate --seed
+php artisan serve
 ```
 
-### Pour préparer la production
+### Frontend
 ```bash
-# Mode automatisé (recommandé)
-chmod +x deploy.sh
-./deploy.sh all          # Setup + migrations + build + test
-
-# Mode manuel
-./deploy.sh backend      # Config backend
-./deploy.sh frontend     # Config frontend
-./deploy.sh validate     # Valider config
-./deploy.sh migrate      # Lancer migrations
-./deploy.sh build        # Builder frontend
-./deploy.sh test         # Tester l'API
-```
-
-### Variables d'env à configurer
-
-**Backend (.env)**
-```
-FEDAPAY_WEBHOOK_SECRET=xxx     # CRITIQUE - webhook paiement
-DB_PASSWORD=xxx                 # Votre password DB
-FRONTEND_URL=https://...        # URL frontend production
-QUEUE_CONNECTION=redis          # Changé de database!
-REDIS_HOST=xxx                  # Si vous l'utilisez
-```
-
-**Frontend (.env.local)**
-```
-VITE_API_URL=https://api.reservia-benin.com/api/v1
+cd reservia/frontend
+cp .env.example .env.local    # VITE_API_URL=http://127.0.0.1:8000/api/v1
+npm install
+npm run dev                   # http://localhost:5173
 ```
 
 ---
 
-## [DONE] CHECKLIST PRE-PROD
+## Variables d'environnement importantes
 
-```
-SÉCURITÉ
-[ ] Vérifier FEDAPAY_WEBHOOK_SECRET dans .env
-[ ] Vérifier tous les secrets .env (no defaults!)
-[ ] HTTPS certificat valide
-[ ] Vérifier FRONTEND_URL en production
-
-INFRASTRUCTURE  
-[ ] QUEUE_CONNECTION = redis configuré
-[ ] Redis running (si sur même serveur)
-[ ] Supervisord conf pour workers
-[ ] Backups DB daily configurés
-
-DÉPLOIEMENT
-[ ] Migrations executées: php artisan migrate --force
-[ ] npm run build completé
-[ ] Tests loadtest faits
-[ ] DEPLOYMENT.md suivi pas à pas
-
-MONITORING
-[ ] Sentry setup pour erreurs
-[ ] Health endpoint répond: curl /api/v1/health
-[ ] Logs accessible et rotating
-[ ] Email sender testée avec vraie compte
-```
+| Variable | Description |
+|----------|-------------|
+| `BREVO_API_KEY` | Clé API Brevo v3 — envoi des codes OTP et e-mails partenaires |
+| `MAIL_FROM_ADDRESS` | Expéditeur vérifié dans Brevo (ex: reserviabenin@gmail.com) |
+| `DB_*` | Connexion MySQL Railway (mysql8.railway.internal en interne) |
+| `FRONTEND_URL` | URL Vercel — utilisée pour les CORS |
+| `VITE_API_URL` | URL Railway — utilisée par le frontend pour les appels API |
 
 ---
 
-## [SECURE] SÉCURITÉ - POINTS CLÉS
+## Fonctionnalités principales
 
-### Avant (DANGER [FAIL])
-```
-[FAIL] Webhooks paiement non vérifiés
-[FAIL] Admin peut tout supprimer
-[FAIL] Tokens jamais expirent
-[FAIL] Double-booking possible
-[FAIL] XSS en descriptions
-[FAIL] Password "password1" accepté
-[FAIL] Rate limiting inexistant
-```
-
-### Après (SÉCURISÉ [DONE])
-```
-[DONE] HMAC-SHA256 toujours vérifié
-[DONE] Authorization sur toutes operations
-[DONE] Token expiration gérée
-[DONE] Database locks atomiques
-[DONE] HTML/JS rejeté en sanitization
-[DONE] Min 12 chars + complexity
-[DONE] Rate limiting 5 req/min auth
-[DONE] CSP headers présent
-[DONE] Audit logging complet
-```
+| Fonctionnalité | Détail |
+|----------------|--------|
+| Inscription | Formulaire + vérification OTP par e-mail (Brevo) |
+| Réservation hébergement | 4 étapes, prix par type de chambre, pré-remplissage profil |
+| Réservation événement | Prix d'entrée, sélection de places |
+| Paiement sandbox | MTN MoMo, Moov Money, Carte Visa/Mastercard |
+| Page Partenaires | Formulaire de candidature → e-mail admin + confirmation candidat |
+| Dashboard Admin | KPIs, réservations, utilisateurs, gestion des rôles |
+| Pages légales | Mentions légales, Confidentialité, CGU |
 
 ---
 
-## [STATS] RÉSULTATS PAR CHIFFRES
+## Comptes de test
 
-```
-Vulnérabilités P0:    10/10 [DONE] FIXÉES
-Vulnérabilités P1:    10/10 [DONE] FIXÉES  
-Vulnerabilités P2:    31/31 [DONE] FIXÉES
-
-Code Coverage:        +45 fichiers touchés
-Database Indexes:     +8 nouveaux
-API Endpoints:        +1 (/health)
-Configurations:       +3 fichiers
-Documentation:        4 guides compl.
-
-Test Score:          Prêt production [DONE]
-```
+| Rôle | E-mail | Mot de passe |
+|------|--------|--------------|
+| Admin | admin@reservia.bj | Admin@2024Secure |
+| Hôte | maurice@hebergements.bj | Host@2024Secure |
+| Client | client1@reservia.bj | Client@2024 |
 
 ---
 
-## [CHECK] BL AVANT DÉPLOIEMENT
+## Déploiement
 
-[WARN] **IMPORTANT**: Ne pas sauter ces étapes!
-
-1. **Staging Test** - Déployer sur serveur test d'abord
-2. **Load Test** - Apache Bench avec charge réaliste  
-3. **Security Audit** - OWASP ZAP scanner externe
-4. **Backup Test** - Vérifier que restore fonctionne
-5. **Email Test** - Vrai compte mail testée
-6. **SSL Test** - Certificat valide + config
-7. **API Test** - Tous endpoints fonctionnels
-
-Si tous les tests passent → **GO PRODUCTION** [RUN]
-
----
-
-## 📞 QUESTIONS FRÉQUENTES
-
-### Q: Je dois changer quelque chose en production?
-**R**: Non, tout est automatisé. Changements mineurs seulement:
-- Migration exist → skip (idempotent)
-- Existing data → pas touché (safe!)
-- New indexes → transparent
-
-### Q: Et les tests unitaires?
-**R**: À ajouter (not included):
-- Backend: 50+ unit tests manquent
-- Frontend: e2e tests avec Cypress
-Recommandé après déploiement initial
-
-### Q: Redis est requis?
-**R**: Pour production: OUI (queue workers)
-Pour dev: NON (database queue possible mais lent)
-
-### Q: Combien de temps pour déployer?
-**R**: ~15 min si tout est configuré:
-- Setup: 5 min
-- Migrations: 2 min
-- Build: 5 min
-- Tests: 3 min
-
-### Q: Quoi faire si email ne marche pas?
-**R**: 
 ```bash
-# Vérifier queue workers running
-supervisor status
+# Frontend (depuis reservia/frontend)
+vercel --prod
 
-# Vérifier logs
-tail -f backend/storage/logs/laravel.log
+# Backend (depuis reservia/backend)
+railway up --service backend --detach
+```
 
-# Forcer email
-php artisan queue:work --verbose
+Le backend exécute `start.sh` au démarrage : migrations, puis seed automatique si la base est vide.
+
+---
+
+## Structure des pages frontend
+
+```
+/                    Accueil
+/hebergements        Liste des hébergements
+/hebergements/:id    Détail + sélection chambre
+/evenements          Liste des événements
+/evenements/:id      Détail événement
+/reservation/:type/:id  Processus de réservation (4 étapes)
+/confirmation/:ref   Page de confirmation + PDF
+/profil              Profil + historique des réservations
+/partenaires         Page partenaires + formulaire
+/login               Connexion
+/register            Inscription
+/admin               Dashboard admin (rôle admin requis)
+/mentions-legales    Mentions légales
+/confidentialite     Politique de confidentialité
+/cgu                 Conditions générales d'utilisation
 ```
 
 ---
 
-## [LEARN] APPRENTISSAGE
-
-Tous les changements incluent:
-- [EDIT] Comments détaillés dans le code
-- [GUIDE] Ce fichier (sommaire)
-- [FILE] CORRECTIONS_CHANGELOG (détail)
-- [FOLDER] DEPLOYMENT (setup)
-
-Lisez les changements pour comprendre les patterns!
-
----
-
-## [NEW] BON À SAVOIR
-
-**Chaque correction:**
-- [DONE] Est testée et vérifiée
-- [DONE] Inclut logging pour audit
-- [DONE] Est backwards compatible
-- [DONE] Ne casse rien (safe migrations)
-- [DONE] Suit conventions Laravel/React
-
-**Production ready:**
-- [DONE] Scalable (indexes + queue)
-- [DONE] Monitorable (health + logs)
-- [DONE] Recoverable (migrations safe)
-- [DONE] Secure (toutes vulnérabilités fixées)
-
----
-
-## [RUN] RÉSUMÉ
-
-Vous avez maintenant:
-
-```
-[DONE] Code 100% pré-production
-[DONE] Sécurité maximale (51 fixes)
-[DONE] Performance optimisée (8 indexes)
-[DONE] Documentation complète
-[DONE] Scripts automatisés
-[DONE] Ready to deploy! [CELEBRATE]
-```
-
-**PROCHAINE ÉTAPE**: Suivre DEPLOYMENT.md et déployer en production!
-
-Questions? → Relire CORRECTIONS_CHANGELOG.md pour détails
-
+Pour tester l'ensemble des fonctionnalités, consulter `TEST_PLAN.md`.

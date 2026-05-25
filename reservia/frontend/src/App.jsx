@@ -1,5 +1,11 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import React from 'react'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import React, { useEffect } from 'react'
+
+function ScrollToTop() {
+  const { pathname } = useLocation()
+  useEffect(() => { window.scrollTo(0, 0) }, [pathname])
+  return null
+}
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Navbar from './components/layout/Navbar'
 import Footer from './components/layout/Footer'
@@ -18,6 +24,10 @@ import AdminReservations from './pages/admin/Reservations'
 import AdminHebergements from './pages/admin/Hebergements'
 import AdminEvenements from './pages/admin/Evenements'
 import AdminUtilisateurs from './pages/admin/Utilisateurs'
+import Partenaires from './pages/Partenaires'
+import MentionsLegales from './pages/legal/MentionsLegales'
+import Confidentialite from './pages/legal/Confidentialite'
+import CGU from './pages/legal/CGU'
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -70,6 +80,7 @@ export default function App() {
       <AuthProvider>
         <BrowserRouter>
           <div className="min-h-screen flex flex-col">
+            <ScrollToTop />
             <Navbar />
             <main className="flex-1">
               <Routes>
@@ -78,6 +89,10 @@ export default function App() {
                 <Route path="/hebergements/:id" element={<HebergementDetail />} />
                 <Route path="/evenements" element={<Evenements />} />
                 <Route path="/evenements/:id" element={<EvenementDetail />} />
+                <Route path="/partenaires" element={<Partenaires />} />
+                <Route path="/mentions-legales" element={<MentionsLegales />} />
+                <Route path="/confidentialite" element={<Confidentialite />} />
+                <Route path="/cgu" element={<CGU />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/reservation/:type/:id" element={<ProtectedRoute><Reservation /></ProtectedRoute>} />

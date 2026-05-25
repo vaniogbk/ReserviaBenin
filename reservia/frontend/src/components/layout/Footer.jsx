@@ -1,16 +1,11 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../../context/AuthContext'
+import toast from 'react-hot-toast'
 import {
   FaMapMarkerAlt, FaEnvelope, FaPhone, FaFacebookF,
   FaInstagram, FaTwitter, FaLinkedinIn, FaShieldAlt,
-  FaMobileAlt, FaCreditCard, FaHeart
+  FaMobileAlt, FaCreditCard
 } from 'react-icons/fa'
-
-const NAV_LINKS = [
-  ['/hebergements', 'Hébergements'],
-  ['/evenements', 'Événements'],
-  ['/login', 'Connexion'],
-  ['/register', 'Créer un compte'],
-]
 
 const SOCIALS = [
   { icon: FaFacebookF,  href: 'https://facebook.com', label: 'Facebook' },
@@ -20,7 +15,15 @@ const SOCIALS = [
 ]
 
 export default function Footer() {
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
   const year = new Date().getFullYear()
+
+  const handleLogout = async () => {
+    await logout()
+    toast.success('Déconnexion réussie')
+    navigate('/')
+  }
 
   return (
     <footer className="bg-dark text-white/70">
@@ -54,11 +57,19 @@ export default function Footer() {
           <h3 className="text-white font-semibold text-sm tracking-widest uppercase mb-4">Navigation</h3>
           <ul className="space-y-2">
             <li><Link to="/" className="text-sm hover:text-white transition-colors">Accueil</Link></li>
-            {NAV_LINKS.map(([path, label]) => (
-              <li key={path}>
-                <Link to={path} className="text-sm hover:text-white transition-colors">{label}</Link>
+            <li><Link to="/hebergements" className="text-sm hover:text-white transition-colors">Hébergements</Link></li>
+            <li><Link to="/evenements" className="text-sm hover:text-white transition-colors">Événements</Link></li>
+            <li><Link to="/partenaires" className="text-sm hover:text-white transition-colors">Devenir partenaire</Link></li>
+            {user ? (
+              <li>
+                <button onClick={handleLogout} className="text-sm hover:text-white transition-colors text-left">Déconnexion</button>
               </li>
-            ))}
+            ) : (
+              <>
+                <li><Link to="/login" className="text-sm hover:text-white transition-colors">Connexion</Link></li>
+                <li><Link to="/register" className="text-sm hover:text-white transition-colors">Créer un compte</Link></li>
+              </>
+            )}
           </ul>
         </div>
 
@@ -110,13 +121,15 @@ export default function Footer() {
       <div className="border-t border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-white/40">
           <span>© {year} Réservia Bénin — Tous droits réservés</span>
-          <span className="flex items-center gap-1">
-            Fait avec <FaHeart className="text-terracotta" size={10} /> au Bénin
+          <span>
+            Fait par{' '}
+            <a href="https://vanio.dev" target="_blank" rel="noopener noreferrer"
+              className="hover:text-white transition-colors font-medium">Vanio.dev</a>
           </span>
           <div className="flex gap-4">
-            <span className="hover:text-white cursor-pointer transition-colors">Mentions légales</span>
-            <span className="hover:text-white cursor-pointer transition-colors">Confidentialité</span>
-            <span className="hover:text-white cursor-pointer transition-colors">CGU</span>
+            <Link to="/mentions-legales" className="hover:text-white transition-colors">Mentions légales</Link>
+            <Link to="/confidentialite" className="hover:text-white transition-colors">Confidentialité</Link>
+            <Link to="/cgu" className="hover:text-white transition-colors">CGU</Link>
           </div>
         </div>
       </div>

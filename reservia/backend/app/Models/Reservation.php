@@ -12,6 +12,7 @@ class Reservation extends Model
     protected $fillable = [
         'user_id',
         'hebergement_id',
+        'chambre_id',
         'evenement_id',
         'numero_reservation',
         'type',
@@ -52,6 +53,11 @@ class Reservation extends Model
     public function hebergement()
     {
         return $this->belongsTo(Hebergement::class);
+    }
+
+    public function chambre()
+    {
+        return $this->belongsTo(\App\Models\Chambre::class);
     }
 
     public function evenement()

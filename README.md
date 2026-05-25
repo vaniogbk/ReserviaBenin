@@ -68,4 +68,4 @@ En mode test, utilisez :
 
 ---
 
-*Projet de fin d'études — Réservia Bénin © 2025*
+*Projet de fin d'études — Réservia Bénin © 2026*

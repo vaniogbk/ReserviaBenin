@@ -1,7 +1,8 @@
-import { useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
+import { useAuth } from '../context/AuthContext'
 import { hebergementApi, evenementApi, reservationApi, paiementApi } from '../services/api'
 import toast from 'react-hot-toast'
 import {
@@ -113,16 +114,21 @@ function Field({ label, error, required, children }) {
 
 export default function Reservation() {
   const { type, id } = useParams()
-  const navigate = useNavigate()
+  const navigate  = useNavigate()
+  const location  = useLocation()
+  const chambreId = new URLSearchParams(location.search).get('chambre')
+  const { user }  = useAuth()
 
   const [step, setStep] = useState(0)
-  const [methode, setMethode] = useState('mtn_momo')
+  const [methode, setMethode] = useState(
+    () => localStorage.getItem('reservia_paiement_methode') || 'mtn_momo'
+  )
   const [paiementId, setPaiementId] = useState(null)
   const [reservation, setReservation] = useState(null)
   const [cardNum, setCardNum] = useState('')
-  const [nbPersonnes, setNbPersonnes] = useState(2)
+  const [nbPersonnes, setNbPersonnes] = useState(1)
 
-  const { register, handleSubmit, watch, trigger, formState: { errors } } = useForm({ mode: 'onBlur' })
+  const { register, handleSubmit, watch, trigger, setValue, formState: { errors } } = useForm({ mode: 'onBlur' })
 
   const { data, isLoading } = useQuery({
     queryKey: [type, id],
@@ -130,16 +136,50 @@ export default function Reservation() {
   })
   const resource = data?.data
 
+  // Charger les chambres si une chambre est sélectionnée
+  const { data: chambresData } = useQuery({
+    queryKey: ['chambres', id],
+    queryFn: () => hebergementApi.chambres(id),
+    enabled: !!chambreId && type === 'hebergement',
+  })
+  const chambre = chambreId && chambresData?.data
+    ? chambresData.data.find(c => c.id === parseInt(chambreId))
+    : null
+
   const dateDebut = watch('date_debut')
   const dateFin   = watch('date_fin')
-  const prix      = parseFloat(resource?.prix_par_nuit || resource?.prix_entree || 0)
+  const prix      = chambre
+    ? parseFloat(chambre.prix_par_nuit || 0)
+    : parseFloat(resource?.prix_par_nuit || resource?.prix_entree || 0)
   const nbNuits   = dateDebut && dateFin
     ? Math.max(1, Math.ceil((new Date(dateFin) - new Date(dateDebut)) / 86_400_000))
     : 1
-  const montantBase  = type === 'hebergement' ? prix * nbNuits : prix * nbPersonnes
-  const fraisService = Math.round(montantBase * 0.05)
-  const taxes        = Math.round(montantBase * 0.03)
-  const total        = montantBase + fraisService + taxes
+  const total = type === 'hebergement' ? prix * nbNuits : prix * nbPersonnes
+
+  // ── Scroll en haut à chaque changement d'étape ──
+  useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }) }, [step])
+
+  // ── Pré-remplissage depuis le profil utilisateur ──
+  useEffect(() => {
+    if (user) {
+      if (user.prenom)    setValue('prenom',             user.prenom)
+      if (user.nom)       setValue('nom',                user.nom)
+      if (user.email)     setValue('email',              user.email)
+      if (user.telephone) setValue('telephone_contact',  user.telephone)
+    }
+  }, [user, setValue])
+
+  // Pré-remplir les champs de paiement quand on arrive à l'étape paiement
+  useEffect(() => {
+    if (step === 3 && user) {
+      if (methode === 'mtn_momo' || methode === 'moov_money') {
+        if (user.telephone) setValue('telephone', user.telephone)
+      }
+      if (methode === 'paypal') {
+        if (user.email) setValue('paypal_email', user.email)
+      }
+    }
+  }, [step, methode, user, setValue])
 
   // ── Mutations ──
 
@@ -179,6 +219,7 @@ export default function Reservation() {
     if (type === 'hebergement') {
       Object.assign(payload, {
         hebergement_id: parseInt(id),
+        chambre_id:     chambreId ? parseInt(chambreId) : null,
         date_debut:     formData.date_debut,
         date_fin:       formData.date_fin,
         nombre_guests:  nbPersonnes,
@@ -290,7 +331,7 @@ export default function Reservation() {
                       <p className="text-xs font-semibold text-earth uppercase tracking-widest mb-4">
                         Dates de séjour <span className="text-terracotta">*</span>
                       </p>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {[
                           { name: 'date_debut', label: 'Arrivée', min: today, validate: v => v >= today || 'Date passée' },
                           { name: 'date_fin',   label: 'Départ',  min: dateDebut || today,
@@ -379,7 +420,7 @@ export default function Reservation() {
 
               <div className="p-6 space-y-5">
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Field label="Prénom" required error={errors.prenom}>
                     <div className={`flex items-center border-2 rounded-2xl px-4 py-3 gap-3 transition-colors
                       ${errors.prenom ? 'border-red-400 bg-red-50' : 'border-earth/20 focus-within:border-dark bg-sand/20'}`}>
@@ -492,11 +533,14 @@ export default function Reservation() {
 
               <div className="p-6">
 
-                <div className="grid grid-cols-2 gap-3 mb-6">
+                <div className="grid grid-cols-1 xs:grid-cols-2 gap-3 mb-6">
                   {METHODES.map(m => {
                     const selected = methode === m.id
                     return (
-                      <button key={m.id} type="button" onClick={() => setMethode(m.id)}
+                      <button key={m.id} type="button" onClick={() => {
+                        setMethode(m.id)
+                        localStorage.setItem('reservia_paiement_methode', m.id)
+                      }}
                         className={`relative p-4 rounded-2xl border-2 text-left transition-all overflow-hidden
                           ${selected
                             ? `border-transparent bg-gradient-to-br ${m.bg} shadow-lg scale-[1.02]`
@@ -642,7 +686,7 @@ export default function Reservation() {
                         required />
                     </Field>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <Field label="Expiration" required error={errors.expiration}>
                         <input type="text"
                           className={`w-full px-4 py-3 border-2 rounded-2xl focus:outline-none font-mono text-sm
@@ -819,9 +863,13 @@ export default function Reservation() {
               <div className="text-xs uppercase tracking-widest text-earth mb-1">
                 {type === 'hebergement' ? 'Hébergement' : 'Événement'}
               </div>
-              <div className="font-display text-lg text-dark leading-tight mb-5">
+              <div className="font-display text-lg text-dark leading-tight mb-1">
                 {resource?.titre || resource?.nom}
               </div>
+              {chambre && (
+                <div className="text-sm text-terracotta font-medium mb-4">{chambre.nom}</div>
+              )}
+              {!chambre && <div className="mb-4" />}
 
               {reservation?.numero_reservation && (
                 <div className="bg-sand rounded-2xl p-3 text-center mb-5">
@@ -851,18 +899,6 @@ export default function Reservation() {
                     <span className="text-dark">{prix.toLocaleString('fr-FR')} × {nbPersonnes}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-earth/80">
-                  <span>Sous-total</span>
-                  <span className="text-dark">{montantBase.toLocaleString('fr-FR')} FCFA</span>
-                </div>
-                <div className="flex justify-between text-earth/80">
-                  <span>Frais service (5%)</span>
-                  <span className="text-dark">{fraisService.toLocaleString('fr-FR')} FCFA</span>
-                </div>
-                <div className="flex justify-between text-earth/80">
-                  <span>Taxes (3%)</span>
-                  <span className="text-dark">{taxes.toLocaleString('fr-FR')} FCFA</span>
-                </div>
                 <div className="flex justify-between font-bold text-base border-t border-earth/20 pt-3 mt-1">
                   <span className="flex items-center gap-1.5"><FaTag size={10} /> Total TTC</span>
                   <span className="text-terracotta">{total.toLocaleString('fr-FR')} FCFA</span>

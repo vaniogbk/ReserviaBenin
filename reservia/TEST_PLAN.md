@@ -1,456 +1,166 @@
-# [TEST] PLAN DE TEST COMPLET - RESERVIA
+# Plan de test — Réservia Bénin
 
-## [INFO] Pré-requis
+**Environnement de production**
+- Frontend : https://frontend-orcin-one-96.vercel.app
+- Backend API : https://reservia-backend-production.up.railway.app/api/v1
+- Health check : `/api/v1/health` → `{"status":"ok"}`
 
-```
-✓ Backend lancé sur http://localhost:8000
-✓ Frontend lancé sur http://localhost:5173
-✓ MySQL XAMPP actif (phpmyadmin)
-```
-
----
-
-## [PHASE] 1. VÉRIFICATION DE L'API
-
-### [TEST] 1.1 Health Check
-
-```bash
-# Terminal: Exécute cette commande
-curl http://localhost:8000/api/v1/health
-
-# Devrait retourner:
-{"status":"ok","message":"API is running"}
-```
-
-**Résultat:** [OK] / [FAIL]
+**Compte admin de test**
+- Email : `admin@reservia.bj`
+- Mot de passe : `Admin@2024Secure`
 
 ---
 
-## [PHASE] 2. AUTHENTIFICATION
+## 1. Authentification
 
-### [TEST] 2.1 Inscription (Register)
+### 1.1 Inscription avec vérification e-mail
+1. Aller sur `/register`
+2. Remplir le formulaire (prénom, nom, e-mail réel, téléphone, mot de passe ≥12 car.)
+3. Cliquer "Créer mon compte"
+4. Vérifier réception du code OTP dans la boîte mail (envoi via Brevo)
+5. Saisir le code à 6 chiffres
 
-**Navigateur:** http://localhost:5173/register
+**Attendu :** redirection vers l'accueil, utilisateur connecté
 
-```
-Email:    test@example.com
-Nom:      Dupont
-Prénom:   Jean
-Password: SecurePass123!@
+### 1.2 Connexion / Déconnexion
+1. Aller sur `/login`
+2. Saisir e-mail + mot de passe
+3. Vérifier affichage du prénom dans la navbar
+4. Cliquer "Déconnexion" (navbar ou footer)
 
-Clique: "S'inscrire"
-```
+**Attendu :** retour sur `/`, navbar sans prénom
 
-**Attendu:**
-- [OK] Pas d'erreur
-- [OK] Redirect vers home (connecté)
-- [OK] Token stocké en localStorage
-
-**Vérifier navigateur:**
-```javascript
-// Console dev (F12 → Console)
-localStorage.getItem('reservia_token')
-// Devrait avoir une longue chaîne de caractères (JWT)
-```
-
-**Résultat:** [OK] / [FAIL]
+### 1.3 Footer conditionnel
+- Non connecté → footer affiche "Connexion" + "Créer un compte"
+- Connecté → footer affiche "Déconnexion" uniquement
 
 ---
 
-### [TEST] 2.2 Logout
+## 2. Hébergements
 
-**Navigateur:** http://localhost:5173
+### 2.1 Liste
+1. Aller sur `/hebergements`
+2. Vérifier les cartes (nom, image, prix, note)
+3. Tester les filtres (ville, fourchette de prix)
 
-```
-1. Clique sur "Profil" (coin haut-droit)
-2. Clique sur "Déconnexion"
-```
-
-**Attendu:**
-- [OK] Redirect vers /login
-- [OK] Token supprimé de localStorage
-
-**Résultat:** [OK] / [FAIL]
+### 2.2 Détail + sélection de chambre
+1. Cliquer sur un hébergement avec plusieurs types de chambres
+2. Vérifier l'onglet "Chambres" : Standard, Deluxe, VIP avec prix distincts
+3. Cliquer "Réserver" sur une chambre Standard
+4. Vérifier que l'URL contient `?chambre=<id>` et que le prix dans le récapitulatif est bien celui de la chambre Standard (pas VIP)
 
 ---
 
-### [TEST] 2.3 Login
+## 3. Événements
 
-**Navigateur:** http://localhost:5173/login
+### 3.1 Liste
+1. Aller sur `/evenements`
+2. Vérifier affichage : titre, date, lieu, prix d'entrée
 
-```
-Email:    test@example.com
-Password: SecurePass123!@
-
-Clique: "Se connecter"
-```
-
-**Attendu:**
-- [OK] Pas d'erreur
-- [OK] Redirect vers home (connecté)
-- [OK] Affiche "Bienvenue Jean Dupont"
-
-**Résultat:** [OK] / [FAIL]
+### 3.2 Détail
+1. Cliquer sur un événement
+2. Vérifier : description, date/heure, lieu, bouton "Réserver"
 
 ---
 
-## [PHASE] 3. AFFICHAGE DES HÉBERGEMENTS
+## 4. Processus de réservation
 
-### [TEST] 3.1 Page Hébergements
+### 4.1 Réservation hébergement (4 étapes)
 
-**Navigateur:** http://localhost:5173/hebergements
+**Étape 1 — Dates**
+- Sélectionner date arrivée et départ
+- Cliquer "Continuer" → vérifier défilement vers le haut
 
-**Attendu:**
-- [OK] Page charge sans erreur
-- [OK] Affiche des cartes d'hébergements
-- [OK] Chaque carte a: nom, image, prix, notation
-- [OK] Filtre "Filtrer par..." fonctionne
+**Étape 2 — Voyageurs**
+- Nombre par défaut = 1
+- Modifier si besoin, ajouter une demande spéciale
 
-**Vérifier console (F12):**
-```
-Pas de messages d'erreur
-Pas de "404 Not found"
-```
+**Étape 3 — Récapitulatif**
+- Vérifier montant = prix chambre (si chambre sélectionnée) × nuits
+- Vérifier que les infos du profil sont pré-remplies (si déjà réservé auparavant)
 
-**Résultat:** [OK] / [FAIL]
+**Étape 4 — Paiement**
+- Choisir MTN MoMo, Moov Money ou Carte
+- La méthode choisie doit être mémorisée pour la prochaine réservation
+- Cliquer "Payer" → confirmation sandbox
 
----
+**Attendu :** page `/confirmation/<ref>` avec récapitulatif et bouton PDF
 
-### [TEST] 3.2 Détail Hébergement
-
-**Navigateur:** Clique sur une carte hébergement
-
-**Attendu:**
-- [OK] Page charge
-- [OK] Affiche: nom, description, prix/nuit, photos
-- [OK] Bouton "Réserver" visible
-- [OK] Affiche coordonnées du propriétaire
-
-**Résultat:** [OK] / [FAIL]
+### 4.2 Annulation
+1. Aller sur `/profil`
+2. Trouver une réservation "en attente"
+3. Cliquer "Annuler" → confirmer
+4. Vérifier statut passé à "annulée"
 
 ---
 
-## [PHASE] 4. AFFICHAGE DES ÉVÉNEMENTS
+## 5. Page Partenaires
 
-### [TEST] 4.1 Page Événements
-
-**Navigateur:** http://localhost:5173/evenements
-
-**Attendu:**
-- [OK] Page charge sans erreur
-- [OK] Affiche des cartes d'événements
-- [OK] Chaque carte a: titre, date, lieu, prix
-- [OK] Filtre fonctionne
-
-**Résultat:** [OK] / [FAIL]
+1. Aller sur `/partenaires` (lien dans la navbar et dans `/register`)
+2. Vérifier affichage : avantages, statistiques, étapes, formulaire
+3. Remplir et soumettre le formulaire
+4. Vérifier écran de succès après soumission
 
 ---
 
-### [TEST] 4.2 Détail Événement
+## 6. Pages légales
 
-**Navigateur:** Clique sur un événement
+Vérifier que chacune charge sans erreur et affiche un contenu structuré :
+- `/mentions-legales`
+- `/confidentialite`
+- `/cgu`
 
-**Attendu:**
-- [OK] Page charge
-- [OK] Affiche details: date, heure, lieu, description
-- [OK] Bouton "Réserver" visible
-
-**Résultat:** [OK] / [FAIL]
+Vérifier les liens dans le footer pointent vers ces pages.
 
 ---
 
-## [PHASE] 5. RÉSERVATION (Hébergement)
+## 7. Dashboard Admin
 
-### [TEST] 5.1 Créer Réservation
+Accès : `/admin` (rôle `admin` requis)
 
-**Navigateur:** http://localhost:5173/hebergements → Clique hébergement → "Réserver"
+### 7.1 Vue d'ensemble
+- KPIs : réservations totales, revenus, utilisateurs actifs
+- Graphiques par période
 
-**Étape 1: Dates**
-```
-Date arrivée: 2026-05-01
-Date départ:  2026-05-05
-Clique: "Suivant"
-```
+### 7.2 Gestion des réservations
+- `/admin/reservations` — tableau filtrable par statut
 
-**Attendu:** [OK] Passe à l'étape 2
+### 7.3 Gestion des utilisateurs
+- `/admin/utilisateurs` — liste avec rôle modifiable
 
-**Étape 2: Informations**
-```
-Nombre personnes: 2
-Demandes spéciales: Chambre côté vue, s'il vous plaît
-Clique: "Suivant"
-```
-
-**Attendu:** [OK] Passe à l'étape 3 (résumé)
-
-**Étape 3: Résumé + Paiement**
-```
-Affiche:
-- Montant HT
-- Frais service
-- Taxes
-- TOTAL
-
-Clique: "Procéder au paiement"
-```
-
-**Attendu:**
-- [OK] Affiche page de paiement
-- [OK] Bouton FedaPay visible
-
-**Résultat:** [OK] / [FAIL]
+### 7.4 Sécurité
+- Tenter d'accéder à `/admin` avec un compte client → redirection vers `/`
+- Tenter d'appeler `GET /api/v1/admin/reservations` sans token → `401`
+- Tenter avec token client → `403`
 
 ---
 
-### [TEST] 5.2 Historique Réservations
+## 8. Scroll et navigation
 
-**Navigateur:** http://localhost:5173/profil
-
-**Attendu:**
-- [OK] Affiche la réservation fraîche créée
-- [OK] Status: "en_attente"
-- [OK] Montant correct
-- [OK] Dates affichées
-
-**Résultat:** [OK] / [FAIL]
+- Chaque navigation vers une nouvelle route → page défile vers le haut (ScrollToTop actif)
+- À chaque étape "Continuer" dans la réservation → scroll vers le haut
 
 ---
 
-## [PHASE] 6. AUTHENTIFICATION ADMIN
+## 9. Vérifications rapides console
 
-### [TEST] 6.1 Login Admin
-
-**Terminal Backend:**
-```bash
-# Vérifier qu'un utilisateur admin existe
-php artisan tinker
-User::where('role', 'admin')->first()
-```
-
-**Si pas d'admin, créer un:**
-```php
-User::create([
-  'nom' => 'Admin',
-  'prenom' => 'Test',
-  'email' => 'admin@reservia.local',
-  'password' => bcrypt('AdminPass123!@'),
-  'role' => 'admin'
-])
-```
-
-**Navigateur:** http://localhost:5173/login (avec admin@reservia.local)
-
-**Attendu:**
-- [OK] Login réussit
-- [OK] Affiche "Dashboard" dans le menu
-
-**Résultat:** [OK] / [FAIL]
+Ouvrir DevTools (F12) sur chaque page principale :
+- Aucune erreur rouge
+- Aucun `404 Not Found` sur les ressources
+- Aucune erreur CORS
 
 ---
 
-## [PHASE] 7. DASHBOARD ADMIN
-
-### [TEST] 7.1 Accès Dashboard
-
-**Navigateur:** http://localhost:5173/admin/dashboard
-
-**Attendu:**
-- [OK] Page charge
-- [OK] Affiche KPIs (revenus, réservations, utilisateurs)
-- [OK] Graphique visible
-- [OK] Menu latéral admin visible
-
-**Résultat:** [OK] / [FAIL]
-
----
-
-### [TEST] 7.2 Gestion Réservations Admin
-
-**Navigateur:** http://localhost:5173/admin/reservations
-
-**Attendu:**
-- [OK] Tableau affiche les réservations
-- [OK] Filtre par statut fonctionne
-- [OK] Affiche: client, montant, date, status
-
-**Résultat:** [OK] / [FAIL]
-
----
-
-### [TEST] 7.3 Gestion Hébergements Admin
-
-**Navigateur:** http://localhost:5173/admin/hebergements
-
-**Attendu:**
-- [OK] Liste des hébergements
-- [OK] Buttons: Éditer, supprimer
-- [OK] Toggle activation fonctionne
-
-**Résultat:** [OK] / [FAIL]
-
----
-
-### [TEST] 7.4 Gestion Utilisateurs Admin
-
-**Navigateur:** http://localhost:5173/admin/utilisateurs
-
-**Attendu:**
-- [OK] Liste des utilisateurs
-- [OK] Affiche: nom, email, rôle
-- [OK] Peut modifier rôle (dropdown)
-
-**Résultat:** [OK] / [FAIL]
-
----
-
-## [PHASE] 8. TESTS DE SÉCURITÉ
-
-### [TEST] 8.1 Rate Limiting Auth
-
-```bash
-# Terminal: Tente 6 logins rapidement
-for i in {1..6}; do
-  curl -X POST http://localhost:8000/api/v1/login \
-    -H "Content-Type: application/json" \
-    -d '{"email":"test@test.com","password":"wrong"}'
-done
-```
-
-**Attendu:**
-- [OK] Après 5 tentatives → Error 429 (Too Many Requests)
-
-**Résultat:** [OK] / [FAIL]
-
----
-
-### [TEST] 8.2 Protection XSS
-
-**Navigateur:** Page Réservation → Demandes spéciales
-
-```
-Colle: <script>alert('XSS')</script>
-Soumet la réservation
-```
-
-**Attendu:**
-- [OK] Pas de popup alert
-- [OK] Script rejeté ou échappé
-
-**Résultat:** [OK] / [FAIL]
-
----
-
-### [TEST] 8.3 Authorization - User ne peut voir autre réservation
-
-**Terminal:**
-```bash
-# Récupère token user normal
-TOKEN=$(curl -X POST http://localhost:8000/api/v1/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"SecurePass123!@"}' \
-  | jq '.token')
-
-# Essaye d'accéder à /admin/reservations (devrait être bloqué)
-curl http://localhost:8000/api/v1/admin/reservations \
-  -H "Authorization: Bearer $TOKEN"
-```
-
-**Attendu:**
-- [OK] Erreur 403 (Forbidden)
-- [OK] Pas d'accès à admin
-
-**Résultat:** [OK] / [FAIL]
-
----
-
-## [PHASE] 9. VÉRIFICATIONS PERFORMANCE
-
-### [TEST] 9.1 Temps de chargement - Page Hébergements
-
-**Console Navigation (F12):**
-```
-Devtools → Network tab
-Recharge la page: F5
-
-Observe: DOMContentLoaded time
-```
-
-**Attendu:**
-- [OK] < 2 secondes
-- [OK] Pas de requêtes pending
-
-**Résultat:** [OK] / [FAIL] - Temps: ___ms
-
----
-
-### [TEST] 9.2 Vérifier Indexes DB
-
-```bash
-# Terminal Backend
-php artisan tinker
-DB::select('SHOW INDEX FROM reservations')
-DB::select('SHOW INDEX FROM hebergements')
-DB::select('SHOW INDEX FROM evenements')
-```
-
-**Attendu:**
-- [OK] Index sur user_id
-- [OK] Index sur statut
-- [OK] Index sur dates
-
-**Résultat:** [OK] / [FAIL]
-
----
-
-## [PHASE] 10. VÉRIFICATIONS ERREURS
-
-### [TEST] 10.1 Console Dev - Pas d'erreurs
-
-**Navigateur:** F12 → Console
-
-Visiter toutes les pages:
-- [OK] Home
-- [OK] Hébergements
-- [OK] Événements
-- [OK] Réservation
-- [OK] Admin Dashboard
-
-**Attendu:**
-- [WARN] Aucune erreur rouge
-- [WARN] Aucun "404 Not found"
-- [WARN] Aucun "CORS error"
-
-**Résultat:** [OK] / [FAIL]
-
----
-
-### [TEST] 10.2 Backend Logs - Aucune erreur
-
-```bash
-# Terminal Backend
-# Regarde la console PHP artisan serve
-
-Attendu:
-✓ Pas de "Exception"
-✓ Pas de "Fatal error"
-✓ Pas de "Undefined variable"
-```
-
-**Résultat:** [OK] / [FAIL]
-
----
-
-## [RÉSUMÉ] SCORE FINAL
-
-Compte le nombre de [OK]:
-
-```
-Total Tests:     ____ / 30
-Tests [OK]:      ____ / 30
-Score %:         ___ %
-```
-
-### Status:
-- ✅ **90-100%**: PRÊT POUR PRODUCTION
-- ⚠️  **70-89%**: OK, corriger les bugs mineurs
-- ❌ **<70%**: Bloquer, corriger avant de continuer
+## Score
+
+| Phase | Tests | Résultat |
+|-------|-------|----------|
+| Auth (inscription OTP, login, logout) | 3 | |
+| Hébergements (liste, détail, prix chambre) | 3 | |
+| Événements (liste, détail) | 2 | |
+| Réservation (4 étapes, annulation) | 2 | |
+| Partenaires | 1 | |
+| Pages légales | 3 | |
+| Admin (dashboard, sécurité) | 4 | |
+| UX (scroll, footer conditionnel) | 2 | |
+| **Total** | **20** | **/20** |

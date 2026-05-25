@@ -36,6 +36,11 @@ export default function Navbar() {
                 {label}
               </Link>
             ))}
+            <Link to="/partenaires"
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all
+                ${isActive('/partenaires') ? 'bg-dark text-white' : 'text-earth hover:text-dark hover:bg-sand'}`}>
+              Devenir partenaire
+            </Link>
           </nav>
 
           {/* Actions */}
@@ -86,6 +91,7 @@ export default function Navbar() {
                 {label}
               </Link>
             ))}
+            <Link to="/partenaires" onClick={() => setMenuOpen(false)} className="block px-4 py-2 text-sm text-dark hover:text-terracotta">Devenir partenaire</Link>
             {!user && (
               <>
                 <Link to="/login" onClick={() => setMenuOpen(false)} className="block px-4 py-2 text-sm text-dark">Connexion</Link>

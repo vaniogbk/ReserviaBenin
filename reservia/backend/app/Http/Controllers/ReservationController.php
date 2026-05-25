@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Chambre;
 use App\Models\Hebergement;
 use App\Models\Evenement;
 use App\Models\Reservation;
@@ -26,6 +27,7 @@ class ReservationController extends Controller
         $data = $request->validate([
             'type'                 => 'required|in:hebergement,evenement',
             'hebergement_id'       => 'required_if:type,hebergement|nullable|integer|exists:hebergements,id',
+            'chambre_id'           => 'nullable|integer|exists:chambres,id',
             'evenement_id'         => 'required_if:type,evenement|nullable|integer|exists:evenements,id',
             'date_debut'           => 'required_if:type,hebergement|nullable|date|after_or_equal:today',
             'date_fin'             => 'required_if:type,hebergement|nullable|date|after:date_debut',
@@ -41,12 +43,24 @@ class ReservationController extends Controller
                 ->lockForUpdate()
                 ->findOrFail($data['hebergement_id']);
 
-            $nuits = (int) now()->parse($data['date_debut'])->diffInDays($data['date_fin']);
-            $prixTotal = $hebergement->prix_par_nuit * $nuits;
+            // Utiliser le prix de la chambre sélectionnée si fournie
+            $prixUnitaire = $hebergement->prix_par_nuit;
+            $chambreId    = null;
+            if (!empty($data['chambre_id'])) {
+                $chambre = Chambre::where('hebergement_id', $hebergement->id)
+                    ->where('actif', true)
+                    ->findOrFail($data['chambre_id']);
+                $prixUnitaire = $chambre->prix_par_nuit;
+                $chambreId    = $chambre->id;
+            }
+
+            $nuits     = (int) now()->parse($data['date_debut'])->diffInDays($data['date_fin']);
+            $prixTotal = $prixUnitaire * $nuits;
 
             $reservation = Reservation::create([
                 'user_id'             => $user->id,
                 'hebergement_id'      => $hebergement->id,
+                'chambre_id'          => $chambreId,
                 'numero_reservation'  => 'RES-' . date('Ymd') . '-' . strtoupper(Str::random(6)),
                 'type'                => 'hebergement',
                 'statut'              => 'en_attente',
@@ -54,7 +68,7 @@ class ReservationController extends Controller
                 'date_fin'            => $data['date_fin'],
                 'nombre_nuits'        => $nuits,
                 'nombre_guests'       => $data['nombre_guests'],
-                'prix_unitaire'       => $hebergement->prix_par_nuit,
+                'prix_unitaire'       => $prixUnitaire,
                 'prix_total'          => $prixTotal,
                 'notes_particulieres' => $data['notes_particulieres'] ?? null,
                 'politique_annulation'=> 'modérée',
@@ -93,7 +107,7 @@ class ReservationController extends Controller
     {
         $reservation = Reservation::where('numero_reservation', $ref)
             ->where('user_id', $request->user()->id)
-            ->with(['hebergement', 'evenement', 'paiement'])
+            ->with(['hebergement', 'evenement', 'paiement', 'user:id,prenom,nom,email,telephone,adresse,ville'])
             ->firstOrFail();
 
         return response()->json($reservation);

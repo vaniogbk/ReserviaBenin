@@ -8,13 +8,16 @@ use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\PaiementController;
 use App\Http\Controllers\ImageController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\PartenaireController;
 
 // ── Préfixe v1 ──────────────────────────────────────────────
 Route::prefix('v1')->group(function () {
 
     // ── Auth ──
-    Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/login',    [AuthController::class, 'login']);
+    Route::post('/register',            [AuthController::class, 'register']);
+    Route::post('/login',               [AuthController::class, 'login']);
+    Route::post('/email/verify-otp',    [AuthController::class, 'verifyOtp'])->middleware('throttle:5,1');
+    Route::post('/email/resend-otp',    [AuthController::class, 'resendOtp'])->middleware('throttle:3,1');
 
     // ── Public : Hébergements ──
     Route::get('/hebergements',                       [HebergementController::class, 'index']);
@@ -25,6 +28,9 @@ Route::prefix('v1')->group(function () {
     // ── Public : Événements ──
     Route::get('/evenements',            [EvenementController::class, 'index']);
     Route::get('/evenements/{id}',       [EvenementController::class, 'show']);
+
+    // ── Partenaires ──
+    Route::post('/partenaires/candidature', [PartenaireController::class, 'candidature'])->middleware('throttle:3,5');
 
     // ── Health check ──
     Route::get('/health', fn() => response()->json(['status' => 'ok', 'timestamp' => now()]));

@@ -163,6 +163,9 @@ export default function EvenementDetail() {
   const aLiveDirect = estNational || (estGratuit && e.type === 'hybride')
   const dateDebut = new Date(e.date_debut)
   const dateFin = e.date_fin ? new Date(e.date_fin) : null
+  const programme = typeof e.programme === 'string'
+    ? (() => { try { return JSON.parse(e.programme) } catch { return {} } })()
+    : (e.programme || {})
 
   return (
     <>
@@ -264,11 +267,11 @@ export default function EvenementDetail() {
             </div>
 
             {/* Programme */}
-            {e.programme && Object.keys(e.programme).length > 0 && (
+            {Object.keys(programme).length > 0 && (
               <div>
                 <h2 className="font-semibold text-dark text-lg mb-4">Programme</h2>
                 <div className="space-y-3">
-                  {Object.entries(e.programme).map(([moment, activites]) => (
+                  {Object.entries(programme).map(([moment, activites]) => (
                     <div key={moment} className="bg-sand rounded-2xl p-4">
                       <p className="font-semibold text-dark capitalize mb-2 text-sm">
                         {moment.replace(/_/g, ' ')}

@@ -37,11 +37,13 @@ api.interceptors.response.use(
 
 // ── Auth ──
 export const authApi = {
-  register: (data) => api.post('/register', data),
-  login: (data) => api.post('/login', data),
-  logout: () => api.post('/logout'),
-  me: () => api.get('/user'),
-  update: (data) => api.put('/user', data),
+  register:   (data) => api.post('/register', data),
+  login:      (data) => api.post('/login', data),
+  logout:     ()     => api.post('/logout'),
+  me:         ()     => api.get('/user'),
+  update:     (data) => api.put('/user', data),
+  verifyOtp:  (data) => api.post('/email/verify-otp', data),
+  resendOtp:  (data) => api.post('/email/resend-otp', data),
 }
 
 // ── Hébergements ──
@@ -78,6 +80,11 @@ export const paiementApi = {
   initier:   (data) => api.post('/paiements/initier', data),
   confirmer: (id, data) => api.post(`/paiements/${id}/confirmer`, data),
   statut:    (id) => api.get(`/paiements/${id}/statut`),
+}
+
+// ── Partenaires ──
+export const partenaireApi = {
+  candidature: (data) => api.post('/partenaires/candidature', data),
 }
 
 // ── Admin ──

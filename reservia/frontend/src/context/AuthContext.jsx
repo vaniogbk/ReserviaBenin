@@ -57,9 +57,13 @@ export function AuthProvider({ children }) {
 
   const register = async (formData) => {
     const { data } = await authApi.register(formData)
+    // register() renvoie requires_verification=true ; pas de token à ce stade
+    return data
+  }
+
+  const loginFromToken = (data) => {
     localStorage.setItem('reservia_token', data.token)
     setUser(data.user)
-    return data
   }
 
   const logout = async () => {
@@ -69,7 +73,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, isAdmin: user?.role === 'admin' }}>
+    <AuthContext.Provider value={{ user, loading, login, register, loginFromToken, logout, isAdmin: user?.role === 'admin' }}>
       {children}
     </AuthContext.Provider>
   )
