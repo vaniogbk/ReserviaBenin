@@ -83,13 +83,15 @@ class ReservationController extends Controller
             }
 
             $prixTotal = $evenement->prix_entree * $data['nombre_places'];
+            $gratuit   = $prixTotal == 0;
 
             $reservation = Reservation::create([
                 'user_id'             => $user->id,
                 'evenement_id'        => $evenement->id,
                 'numero_reservation'  => 'RES-' . date('Ymd') . '-' . strtoupper(Str::random(6)),
                 'type'                => 'evenement',
-                'statut'              => 'en_attente',
+                'statut'              => $gratuit ? 'confirmée' : 'en_attente',
+                'statut_paiement'     => $gratuit ? 'payé' : null,
                 'nombre_places'       => $data['nombre_places'],
                 'date_evenement'      => $evenement->date_debut,
                 'prix_unitaire'       => $evenement->prix_entree,

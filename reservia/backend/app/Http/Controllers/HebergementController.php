@@ -29,13 +29,30 @@ class HebergementController extends Controller
             $query->where('type', $request->type);
         }
         if ($request->filled('departement')) {
-            $query->where('departement', $request->departement);
+            $dept   = $request->departement;
+            $villes = $this->villesDepartement($dept);
+            $query->where(function ($q) use ($dept, $villes) {
+                $q->where('departement', $dept);
+                foreach ($villes as $ville) {
+                    $q->orWhere('ville', 'like', '%' . $ville . '%');
+                }
+            });
         }
         if ($request->filled('q')) {
             $query->where(function ($q) use ($request) {
                 $q->where('titre', 'like', '%' . $request->q . '%')
                   ->orWhere('description', 'like', '%' . $request->q . '%');
             });
+        }
+        if ($request->has('amenagements') && is_array($request->input('amenagements'))) {
+            $amenagements = array_filter($request->input('amenagements'));
+            if (!empty($amenagements)) {
+                $query->whereHas('chambres', function ($q) use ($amenagements) {
+                    foreach ($amenagements as $a) {
+                        $q->whereJsonContains('amenagements', $a);
+                    }
+                });
+            }
         }
 
         $perPage = min((int) $request->input('per_page', 12), 100);
@@ -78,6 +95,26 @@ class HebergementController extends Controller
             'hebergement_id'      => $id,
             'dates_indisponibles' => $reservations,
         ]);
+    }
+
+    private function villesDepartement(string $dept): array
+    {
+        $map = [
+            'Alibori'    => ['Kandi', 'Malanville', 'Gogounou', 'Ségbana', 'Karimama', 'Banikoara'],
+            'Atacora'    => ['Natitingou', 'Tanguiéta', 'Boukoumbé', 'Cobly', 'Matéri', 'Péhunco', 'Kérou'],
+            'Atlantique' => ['Abomey-Calavi', 'Allada', 'Ouidah', 'Kpomassè', 'Sô-Ava', 'Toffo', 'Zè', 'Cotonou'],
+            'Borgou'     => ['Parakou', 'Nikki', 'N\'Dali', 'Pèrèrè', 'Kalalé', 'Sinendé', 'Bembéréké'],
+            'Collines'   => ['Savè', 'Dassa', 'Glazoué', 'Bantè', 'Ouèssè', 'Savalou'],
+            'Couffo'     => ['Aplahoué', 'Djakotomey', 'Dogbo', 'Klouékanmè', 'Lalo', 'Toviklin'],
+            'Donga'      => ['Djougou', 'Bassila', 'Copargo', 'Ouaké'],
+            'Littoral'   => ['Cotonou'],
+            'Mono'       => ['Lokossa', 'Athiémé', 'Bopa', 'Comé', 'Grand-Popo', 'Houéyogbé'],
+            'Ouémé'      => ['Porto-Novo', 'Adjarra', 'Adjohoun', 'Akpro-Missérété', 'Avrankou', 'Sèmè-Podji'],
+            'Plateau'    => ['Pobè', 'Adja-Ouèrè', 'Ifangni', 'Kétou', 'Sakété'],
+            'Zou'        => ['Abomey', 'Bohicon', 'Covè', 'Djidja', 'Agbangnizoun', 'Za-Kpota'],
+        ];
+
+        return $map[$dept] ?? [];
     }
 
     public function destroy(int $id): JsonResponse

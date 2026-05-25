@@ -11,8 +11,9 @@ export default function SearchBar({ defaultType = 'hebergement' }) {
 
   const handleSearch = (e) => {
     e.preventDefault()
-    const params = new URLSearchParams(Object.entries(form).filter(([,v]) => v))
-    const path = form.type === 'hebergement' ? '/hebergements' : '/evenements'
+    const { type, ...rest } = form
+    const params = new URLSearchParams(Object.entries(rest).filter(([, v]) => v))
+    const path = type === 'hebergement' ? '/hebergements' : '/evenements'
     navigate(`${path}?${params}`)
   }
 

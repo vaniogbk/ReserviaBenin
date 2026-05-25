@@ -185,7 +185,15 @@ export default function Reservation() {
 
   const creerMutation = useMutation({
     mutationFn: reservationApi.creer,
-    onSuccess: ({ data: d }) => { setReservation(d); setStep(2) },
+    onSuccess: ({ data: d }) => {
+      setReservation(d)
+      if (d.prix_total == 0) {
+        toast.success('Inscription confirmée — événement gratuit !')
+        navigate(`/confirmation/${d.numero_reservation}`)
+      } else {
+        setStep(2)
+      }
+    },
     onError: (e) => toast.error(e.response?.data?.message || 'Erreur lors de la réservation.'),
   })
 

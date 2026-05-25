@@ -1,9 +1,24 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { hebergementApi } from '../services/api'
 import { useAuth } from '../context/AuthContext'
-import { FaMapMarkerAlt, FaStar, FaCheck, FaLock, FaCheckCircle } from 'react-icons/fa'
+import { FaMapMarkerAlt, FaStar, FaCheck, FaLock, FaCheckCircle, FaTimes } from 'react-icons/fa'
+
+const AMENAGEMENT_LABELS = {
+  jacuzzi: 'Jacuzzi', piscine: 'Piscine', piscine_privée: 'Piscine privée',
+  piscine_biologique: 'Piscine bio', terrasse: 'Terrasse', baignoire: 'Baignoire',
+  baignoire_balnéo: 'Balnéo', butler: 'Butler', vue_mer: 'Vue mer',
+  vue_océan: 'Vue océan', vue_lac: 'Vue lac', vue_lagon: 'Vue lagon',
+  vue_piscine: 'Vue piscine', vue_ville: 'Vue ville', vue_panoramique: 'Vue panoramique',
+  balcon: 'Balcon', salon: 'Salon', petit_déjeuner: 'Petit-déjeuner',
+  minibar: 'Minibar', clim: 'Climatisation', wifi: 'Wi-Fi', tv: 'TV',
+  bureau: 'Bureau', 'coffre-fort': 'Coffre-fort', gym: 'Gym', hammam: 'Hammam',
+  accès_plage: 'Accès plage', rooftop_privé: 'Rooftop privé', kitchenette: 'Kitchenette',
+  cuisine: 'Cuisine', chef_personnel: 'Chef personnel', art_africain: 'Art africain',
+  excursion_ganvié: 'Excursion Ganvié', deux_sdb: '2 salles de bain',
+  parking: 'Parking', navette_aéroport: 'Navette aéroport',
+}
 
 const FALLBACK = {
   hotel: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1200&q=85',
@@ -108,6 +123,7 @@ export default function HebergementDetail() {
   const { id } = useParams()
   const { user } = useAuth()
   const [heroImgError, setHeroImgError] = useState(false)
+  const [selectedAmenagements, setSelectedAmenagements] = useState([])
 
   const { data, isLoading } = useQuery({
     queryKey: ['hebergement', id],
@@ -122,6 +138,24 @@ export default function HebergementDetail() {
 
   const h = data?.data
   const chambres = chambresData?.data ?? []
+
+  const availableAmenagements = useMemo(() => {
+    const all = new Set()
+    chambres.forEach(c => (c.amenagements || []).forEach(a => all.add(a)))
+    return [...all].sort()
+  }, [chambres])
+
+  const filteredChambres = useMemo(() => {
+    if (selectedAmenagements.length === 0) return chambres
+    return chambres.filter(c =>
+      selectedAmenagements.every(a => (c.amenagements || []).includes(a))
+    )
+  }, [chambres, selectedAmenagements])
+
+  const toggleAmenagement = (a) =>
+    setSelectedAmenagements(prev =>
+      prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a]
+    )
 
   if (isLoading) return (
     <div className="pt-16 flex items-center justify-center h-screen">
@@ -205,6 +239,75 @@ export default function HebergementDetail() {
                 </div>
               </div>
             )}
+
+            {/* Section chambres & suites */}
+            {chambres.length > 0 && (
+              <div className="mt-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-display text-3xl font-light text-dark">
+                    Chambres & Suites
+                  </h2>
+                  <span className="text-sm text-earth">{chambres.length} option{chambres.length > 1 ? 's' : ''}</span>
+                </div>
+
+                {availableAmenagements.length > 0 && (
+                  <div className="mb-5">
+                    <p className="text-xs text-earth mb-2 font-medium uppercase tracking-wider">Filtrer par équipement</p>
+                    <div className="flex flex-wrap gap-2">
+                      {availableAmenagements.map(a => {
+                        const active = selectedAmenagements.includes(a)
+                        return (
+                          <button
+                            key={a}
+                            onClick={() => toggleAmenagement(a)}
+                            className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
+                              active
+                                ? 'bg-terracotta text-white border-terracotta'
+                                : 'bg-white text-earth border-earth/30 hover:border-terracotta/50 hover:text-terracotta'
+                            }`}
+                          >
+                            {active && <FaTimes size={9} />}
+                            {AMENAGEMENT_LABELS[a] || a}
+                          </button>
+                        )
+                      })}
+                      {selectedAmenagements.length > 0 && (
+                        <button
+                          onClick={() => setSelectedAmenagements([])}
+                          className="px-3 py-1.5 rounded-full text-xs text-earth/60 hover:text-earth transition-colors underline"
+                        >
+                          Tout afficher
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {filteredChambres.length === 0 ? (
+                  <div className="text-center py-10 bg-sand rounded-2xl">
+                    <p className="text-earth font-display text-xl">Aucune chambre ne correspond</p>
+                    <p className="text-earth/60 text-sm mt-1">Essayez de retirer certains filtres</p>
+                    <button
+                      onClick={() => setSelectedAmenagements([])}
+                      className="mt-3 text-terracotta text-sm hover:underline"
+                    >
+                      Réinitialiser les filtres
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    {filteredChambres.map(chambre => (
+                      <ChambreCard
+                        key={chambre.id}
+                        chambre={chambre}
+                        hebergementId={h.id}
+                        user={user}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Booking widget */}
@@ -232,33 +335,15 @@ export default function HebergementDetail() {
 
             {chambres.length > 0 && (
               <div className="mt-4 pt-4 border-t border-sand text-center text-xs text-earth">
-                {chambres.length} type{chambres.length > 1 ? 's' : ''} de chambre{chambres.length > 1 ? 's' : ''} disponible{chambres.length > 1 ? 's' : ''}
+                {selectedAmenagements.length > 0
+                  ? `${filteredChambres.length} / ${chambres.length} chambre${chambres.length > 1 ? 's' : ''} filtrée${filteredChambres.length > 1 ? 's' : ''}`
+                  : `${chambres.length} type${chambres.length > 1 ? 's' : ''} de chambre${chambres.length > 1 ? 's' : ''} disponible${chambres.length > 1 ? 's' : ''}`
+                }
               </div>
             )}
           </div>
         </div>
 
-        {/* Section chambres & suites */}
-        {chambres.length > 0 && (
-          <div className="mt-12">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="font-display text-3xl font-light text-dark">
-                Chambres & Suites
-              </h2>
-              <span className="text-sm text-earth">{chambres.length} option{chambres.length > 1 ? 's' : ''}</span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {chambres.map(chambre => (
-                <ChambreCard
-                  key={chambre.id}
-                  chambre={chambre}
-                  hebergementId={h.id}
-                  user={user}
-                />
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   )

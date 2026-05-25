@@ -48,7 +48,12 @@ export const authApi = {
 
 // ── Hébergements ──
 export const hebergementApi = {
-  liste: (params) => api.get('/hebergements', { params }),
+  liste: ({ amenagements = [], ...rest } = {}) => {
+    const searchParams = new URLSearchParams()
+    Object.entries(rest).forEach(([k, v]) => { if (v !== '' && v != null) searchParams.append(k, v) })
+    amenagements.forEach(a => searchParams.append('amenagements[]', a))
+    return api.get('/hebergements', { params: searchParams })
+  },
   detail: (id) => api.get(`/hebergements/${id}`),
   chambres: (id) => api.get(`/hebergements/${id}/chambres`),
   disponibilites: (id) => api.get(`/hebergements/${id}/disponibilites`),
