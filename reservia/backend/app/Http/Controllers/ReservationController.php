@@ -10,6 +10,14 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
+/**
+ * Gestion des réservations (hébergements et événements).
+ *
+ * Toutes les routes nécessitent une authentification Sanctum.
+ * Les réservations pour événements gratuits (prix_total == 0) sont
+ * confirmées immédiatement sans passer par l'étape paiement.
+ * Le numéro de réservation suit le format RES-XXXXXX (6 caractères aléatoires).
+ */
 class ReservationController extends Controller
 {
     public function index(Request $request): JsonResponse

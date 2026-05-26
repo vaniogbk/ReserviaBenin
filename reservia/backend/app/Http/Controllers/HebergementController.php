@@ -7,6 +7,14 @@ use App\Models\Reservation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
+/**
+ * Gestion publique des hébergements.
+ *
+ * Tous les endpoints sont publics (pas d'authentification requise).
+ * Le filtre `departement` utilise un mapping ville→département car la colonne
+ * `departement` des hébergements seedés est null — on filtre sur le champ `ville`.
+ * Le filtre `amenagements[]` utilise whereHas + whereJsonContains sur les chambres actives.
+ */
 class HebergementController extends Controller
 {
     public function index(Request $request): JsonResponse

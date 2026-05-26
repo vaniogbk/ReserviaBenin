@@ -1,6 +1,11 @@
+/**
+ * Couche d'accès à l'API REST Réservia Bénin.
+ * Toutes les fonctions retournent une Promise<AxiosResponse>.
+ * Le token Bearer est injecté automatiquement depuis localStorage.
+ * Un 401 déclenche une déconnexion et une redirection vers /login.
+ */
 import axios from 'axios'
 
-// Vérifier que l'URL API est configurée
 const apiUrl = import.meta.env.VITE_API_URL
 if (!apiUrl) {
   console.error('[FAIL] VITE_API_URL environment variable is not configured')
@@ -16,14 +21,14 @@ const api = axios.create({
   },
 })
 
-// Injecter le token automatiquement
+// Injecter le token Bearer à chaque requête si l'utilisateur est connecté
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('reservia_token')
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
 
-// Gérer les erreurs globalement
+// Déconnexion automatique sur token expiré ou invalide
 api.interceptors.response.use(
   (res) => res,
   (error) => {
