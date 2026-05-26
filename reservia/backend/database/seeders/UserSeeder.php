@@ -24,6 +24,7 @@ class UserSeeder extends Seeder
                     'password'           => Hash::make($data['password']),
                     'statut'             => 'actif',
                     'accepte_conditions' => true,
+                    'email_verified_at'  => now(),
                 ])
             );
         }
@@ -44,6 +45,7 @@ class UserSeeder extends Seeder
                     'role'               => 'client',
                     'statut'             => 'actif',
                     'accepte_conditions' => true,
+                    'email_verified_at'  => now(),
                 ]
             );
         }
