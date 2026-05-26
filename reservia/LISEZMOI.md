@@ -14,7 +14,7 @@ reservia/
 ```
 
 **URLs de production**
-- Frontend : https://reservia-benin.vercel.app
+- Frontend : https://reserviabenin.vercel.app
 - Backend : https://reservia-backend-production.up.railway.app
 
 ---

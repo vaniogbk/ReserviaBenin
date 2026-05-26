@@ -1,7 +1,7 @@
 # Plan de test — Réservia Bénin
 
 **Environnement de production**
-- Frontend : https://reservia-benin.vercel.app
+- Frontend : https://reserviabenin.vercel.app
 - Backend API : https://reservia-backend-production.up.railway.app/api/v1
 - Health check : `/api/v1/health` → `{"status":"ok"}`
 

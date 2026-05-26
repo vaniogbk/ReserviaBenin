@@ -26,7 +26,7 @@ echo    URL : https://reservia-benin-api.loca.lt
 echo    Ne ferme PAS cette fenetre pendant la soutenance !
 echo.
 echo [3/3] Vercel est deja configure avec cette URL.
-echo    Frontend : https://reservia-benin.vercel.app
+echo    Frontend : https://reserviabenin.vercel.app
 echo.
 echo ============================================
 echo    Tout est pret ! Lance ta soutenance.

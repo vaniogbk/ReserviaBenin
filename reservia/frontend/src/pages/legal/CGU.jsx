@@ -17,7 +17,7 @@ export default function CGU() {
             <h2 className="font-semibold text-dark text-lg mb-3">1. Objet</h2>
             <p>
               Les présentes Conditions Générales d'Utilisation (CGU) régissent l'accès et l'utilisation de la plateforme
-              Réservia Bénin, accessible à l'adresse <strong>reservia-benin.vercel.app</strong>. En créant un compte
+              Réservia Bénin, accessible à l'adresse <strong>reserviabenin.vercel.app</strong>. En créant un compte
               ou en utilisant nos services, vous acceptez sans réserve les présentes CGU.
             </p>
           </section>
