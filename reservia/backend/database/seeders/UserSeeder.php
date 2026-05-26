@@ -18,7 +18,7 @@ class UserSeeder extends Seeder
         ];
 
         foreach ($hosts as $data) {
-            User::firstOrCreate(
+            User::updateOrCreate(
                 ['email' => $data['email']],
                 array_merge($data, [
                     'password'           => Hash::make($data['password']),
@@ -31,7 +31,7 @@ class UserSeeder extends Seeder
 
         $villes = ['Cotonou', 'Porto-Novo', 'Abomey', 'Ouidah', 'Parakou'];
         for ($i = 1; $i <= 10; $i++) {
-            User::firstOrCreate(
+            User::updateOrCreate(
                 ['email' => "client{$i}@reservia.bj"],
                 [
                     'nom'                => 'Client' . $i,
