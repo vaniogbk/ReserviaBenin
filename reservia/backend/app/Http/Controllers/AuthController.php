@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Candidature;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -97,6 +98,11 @@ class AuthController extends Controller
             'accepte_conditions'   => 'required|accepted',
         ]);
 
+        // Si l'e-mail correspond à une candidature approuvée, le nouvel utilisateur devient hôte
+        $candidature = Candidature::where('email', $data['email'])
+            ->where('statut', 'approuvée')
+            ->first();
+
         $user = User::create([
             'nom'                => $data['nom'],
             'prenom'             => $data['prenom'],
@@ -104,6 +110,8 @@ class AuthController extends Controller
             'password'           => Hash::make($data['password']),
             'telephone'          => $data['telephone'] ?? null,
             'accepte_conditions' => true,
+            'role'               => $candidature ? 'host' : 'client',
+            'type_activite'      => $candidature?->type_activite,
         ]);
 
         // Envoi du code OTP par e-mail
