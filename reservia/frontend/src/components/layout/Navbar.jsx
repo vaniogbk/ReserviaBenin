@@ -54,7 +54,7 @@ export default function Navbar() {
                     Admin ↗
                   </Link>
                 )}
-                {user.role === 'host' && (
+                {(user.role === 'host' || user.role === 'admin') && (
                   <Link to="/host"
                     className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-terracotta/10 text-terracotta text-sm font-semibold hover:bg-terracotta/20 transition-colors">
                     <FaUserTie size={13} /> Espace Pro
@@ -100,7 +100,7 @@ export default function Navbar() {
               </Link>
             ))}
             <Link to="/partenaires" onClick={() => setMenuOpen(false)} className="block px-4 py-2 text-sm text-dark hover:text-terracotta">Devenir partenaire</Link>
-            {user?.role === 'host' && (
+            {(user?.role === 'host' || user?.role === 'admin') && (
               <Link to="/host" onClick={() => setMenuOpen(false)} className="block px-4 py-2 text-sm text-terracotta font-semibold">Espace Pro</Link>
             )}
             {user?.role === 'admin' && (

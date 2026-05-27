@@ -44,6 +44,36 @@ class EvenementController extends Controller
         return response()->json($evenement);
     }
 
+    public function creer(Request $request): JsonResponse
+    {
+        /** @var \App\Models\User|null $user */
+        $user = auth()->user();
+        if (!$user || !in_array($user->role, ['host', 'admin'])) {
+            return response()->json(['message' => 'Accès refusé.'], 403);
+        }
+
+        $data = $request->validate([
+            'titre'               => 'required|string|max:255',
+            'categorie'           => 'required|in:vodoun,gastronomie,culture,seminaire,nature,art',
+            'description'         => 'required|string',
+            'lieu'                => 'required|string|max:255',
+            'ville'               => 'required|string|max:100',
+            'date_debut'          => 'required|date',
+            'date_fin'            => 'required|date|after_or_equal:date_debut',
+            'prix_entree'         => 'required|numeric|min:0',
+            'nombre_places_total' => 'required|integer|min:1',
+        ]);
+
+        $evenement = Evenement::create([
+            ...$data,
+            'user_id'                   => $user->id,
+            'statut'                    => 'publié',
+            'nombre_places_disponibles' => $data['nombre_places_total'],
+        ]);
+
+        return response()->json($evenement, 201);
+    }
+
     public function destroy(int $id): JsonResponse
     {
         $user = auth()->user();

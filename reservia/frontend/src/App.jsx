@@ -29,6 +29,8 @@ import HostDashboard from './pages/host/Dashboard'
 import HebergementsHost from './pages/host/HebergementsHost'
 import EvenementsHost from './pages/host/EvenementsHost'
 import ReservationsHost from './pages/host/ReservationsHost'
+import AddHebergement from './pages/host/AddHebergement'
+import AddEvenement from './pages/host/AddEvenement'
 import Partenaires from './pages/Partenaires'
 import MentionsLegales from './pages/legal/MentionsLegales'
 import Confidentialite from './pages/legal/Confidentialite'
@@ -115,6 +117,8 @@ export default function App() {
                 <Route path="/host/hebergements" element={<ProtectedRoute hostOnly><HebergementsHost /></ProtectedRoute>} />
                 <Route path="/host/evenements" element={<ProtectedRoute hostOnly><EvenementsHost /></ProtectedRoute>} />
                 <Route path="/host/reservations" element={<ProtectedRoute hostOnly><ReservationsHost /></ProtectedRoute>} />
+                <Route path="/host/hebergements/ajouter" element={<ProtectedRoute hostOnly><AddHebergement /></ProtectedRoute>} />
+                <Route path="/host/evenements/ajouter" element={<ProtectedRoute hostOnly><AddEvenement /></ProtectedRoute>} />
               </Routes>
             </main>
             <Footer />

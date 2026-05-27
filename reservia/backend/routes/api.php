@@ -56,6 +56,10 @@ Route::prefix('v1')->group(function () {
         Route::post('/paiements/{id}/confirmer',   [PaiementController::class, 'confirmerSandbox']);
         Route::get('/paiements/{id}/statut',       [PaiementController::class, 'statut']);
 
+        // Création par les hôtes
+        Route::post('/hebergements',  [HebergementController::class, 'creer']);
+        Route::post('/evenements',    [EvenementController::class,   'creer']);
+
         // Images Hébergements
         Route::post('/hebergements/{hebergement}/images',             [ImageController::class, 'uploadHebergement']);
         Route::delete('/hebergements/{hebergement}/images/une',       [ImageController::class, 'supprimerImageHebergement']);

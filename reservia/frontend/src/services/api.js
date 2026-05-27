@@ -106,10 +106,12 @@ export const candidatureApi = {
 
 // ── Espace hôte ──
 export const hostApi = {
-  stats:        ()     => api.get('/host/stats'),
-  hebergements: ()     => api.get('/host/hebergements'),
-  evenements:   ()     => api.get('/host/evenements'),
-  reservations: (params) => api.get('/host/reservations', { params }),
+  stats:             ()       => api.get('/host/stats'),
+  hebergements:      ()       => api.get('/host/hebergements'),
+  evenements:        ()       => api.get('/host/evenements'),
+  reservations:      (params) => api.get('/host/reservations', { params }),
+  creerHebergement:  (data)   => api.post('/hebergements', data),
+  creerEvenement:    (data)   => api.post('/evenements', data),
 }
 
 // ── Admin ──

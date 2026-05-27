@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { hostApi } from '../../services/api'
 import HostLayout from '../../components/layout/HostLayout'
 import {
-  FaTicketAlt, FaCalendarAlt, FaMapMarkerAlt, FaUsers, FaEye,
+  FaTicketAlt, FaCalendarAlt, FaMapMarkerAlt, FaUsers, FaEye, FaPlus,
 } from 'react-icons/fa'
 
 export default function EvenementsHost() {
@@ -16,6 +16,13 @@ export default function EvenementsHost() {
 
   return (
     <HostLayout title="Mes événements">
+
+      <div className="flex justify-end mb-6">
+        <Link to="/host/evenements/ajouter"
+          className="flex items-center gap-2 px-5 py-2.5 bg-terracotta text-white rounded-xl text-sm font-semibold hover:bg-terracotta/90 transition-colors">
+          <FaPlus size={12} /> Ajouter un événement
+        </Link>
+      </div>
 
       {isLoading ? (
         <div className="grid gap-4">

@@ -125,6 +125,37 @@ class HebergementController extends Controller
         return $map[$dept] ?? [];
     }
 
+    public function creer(Request $request): JsonResponse
+    {
+        /** @var \App\Models\User|null $user */
+        $user = auth()->user();
+        if (!$user || !in_array($user->role, ['host', 'admin'])) {
+            return response()->json(['message' => 'Accès refusé.'], 403);
+        }
+
+        $data = $request->validate([
+            'titre'              => 'required|string|max:255',
+            'type'               => 'required|in:hotel,ecolodge,gite,villa,auberge',
+            'description'        => 'required|string',
+            'ville'              => 'required|string|max:100',
+            'adresse'            => 'nullable|string|max:255',
+            'prix_par_nuit'      => 'required|numeric|min:0',
+            'capacite_max'       => 'nullable|integer|min:1',
+            'nombre_pieces'      => 'nullable|integer|min:1',
+            'nombre_lits'        => 'nullable|integer|min:1',
+            'nombre_salles_bain' => 'nullable|integer|min:0',
+            'amenagements'       => 'nullable|array',
+        ]);
+
+        $hebergement = Hebergement::create([
+            ...$data,
+            'user_id' => $user->id,
+            'statut'  => 'actif',
+        ]);
+
+        return response()->json($hebergement, 201);
+    }
+
     public function destroy(int $id): JsonResponse
     {
         /** @var \App\Models\User|null $user */
