@@ -10,6 +10,13 @@ use App\Http\Controllers\ImageController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\PartenaireController;
 
+// ── Fix temporaire : activation des comptes (à supprimer après usage) ──
+Route::get('/fix-accounts-x7k2m', function () {
+    $count = DB::table('users')->whereNull('email_verified_at')->count();
+    DB::table('users')->whereNull('email_verified_at')->update(['email_verified_at' => now()]);
+    return response()->json(['ok' => true, 'comptes_actives' => $count]);
+});
+
 // ── Préfixe v1 ──────────────────────────────────────────────
 Route::prefix('v1')->group(function () {
 
