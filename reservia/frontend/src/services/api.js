@@ -97,6 +97,21 @@ export const partenaireApi = {
   candidature: (data) => api.post('/partenaires/candidature', data),
 }
 
+// ── Admin : Candidatures partenaires ──
+export const candidatureApi = {
+  liste:     (params) => api.get('/admin/partenaires', { params }),
+  approuver: (id)     => api.patch(`/admin/partenaires/${id}/approuver`),
+  rejeter:   (id, notes) => api.patch(`/admin/partenaires/${id}/rejeter`, { notes_admin: notes }),
+}
+
+// ── Espace hôte ──
+export const hostApi = {
+  stats:        ()     => api.get('/host/stats'),
+  hebergements: ()     => api.get('/host/hebergements'),
+  evenements:   ()     => api.get('/host/evenements'),
+  reservations: (params) => api.get('/host/reservations', { params }),
+}
+
 // ── Admin ──
 export const adminApi = {
   dashboard: () => api.get('/admin/dashboard'),

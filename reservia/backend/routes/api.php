@@ -9,6 +9,7 @@ use App\Http\Controllers\PaiementController;
 use App\Http\Controllers\ImageController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\PartenaireController;
+use App\Http\Controllers\HostController;
 
 // ── Préfixe v1 ──────────────────────────────────────────────
 Route::prefix('v1')->group(function () {
@@ -65,6 +66,14 @@ Route::prefix('v1')->group(function () {
         Route::delete('/evenements/{evenement}/images/une',           [ImageController::class, 'supprimerImageEvenement']);
         Route::patch('/evenements/{evenement}/images/principale',     [ImageController::class, 'setPrincipaleEvenement']);
 
+        // Espace partenaire (host)
+        Route::prefix('host')->group(function () {
+            Route::get('/stats',        [HostController::class, 'stats']);
+            Route::get('/hebergements', [HostController::class, 'hebergements']);
+            Route::get('/evenements',   [HostController::class, 'evenements']);
+            Route::get('/reservations', [HostController::class, 'reservations']);
+        });
+
         // Admin
         Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
             Route::get('/dashboard',                    [DashboardController::class, 'index']);
@@ -72,8 +81,11 @@ Route::prefix('v1')->group(function () {
             Route::get('/utilisateurs',                 [DashboardController::class, 'utilisateurs']);
             Route::patch('/utilisateurs/{id}/role',     [DashboardController::class, 'updateRole']);
             Route::get('/statistiques',                 [DashboardController::class, 'statistiques']);
-            Route::delete('/hebergements/{id}',         [HebergementController::class, 'destroy']);
-            Route::delete('/evenements/{id}',           [EvenementController::class, 'destroy']);
+            Route::delete('/hebergements/{id}',             [HebergementController::class, 'destroy']);
+            Route::delete('/evenements/{id}',               [EvenementController::class, 'destroy']);
+            Route::get('/partenaires',                      [PartenaireController::class, 'index']);
+            Route::patch('/partenaires/{id}/approuver',     [PartenaireController::class, 'approuver']);
+            Route::patch('/partenaires/{id}/rejeter',       [PartenaireController::class, 'rejeter']);
         });
     });
 });

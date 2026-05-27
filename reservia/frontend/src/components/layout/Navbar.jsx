@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import toast from 'react-hot-toast'
+import { FaUserTie } from 'react-icons/fa'
 
 export default function Navbar() {
   const { user, logout } = useAuth()
@@ -48,8 +49,15 @@ export default function Navbar() {
             {user ? (
               <div className="flex items-center gap-3">
                 {user.role === 'admin' && (
-                  <Link to="/admin" className="px-4 py-2 text-sm font-medium text-primary hover:underline">
+                  <Link to="/admin"
+                    className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-terracotta hover:underline">
                     Admin ↗
+                  </Link>
+                )}
+                {user.role === 'host' && (
+                  <Link to="/host"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-terracotta/10 text-terracotta text-sm font-semibold hover:bg-terracotta/20 transition-colors">
+                    <FaUserTie size={13} /> Espace Pro
                   </Link>
                 )}
                 <Link to="/profil" className="flex items-center gap-2 px-4 py-2 rounded-full bg-sand hover:bg-earth/20 transition-colors">
@@ -92,6 +100,12 @@ export default function Navbar() {
               </Link>
             ))}
             <Link to="/partenaires" onClick={() => setMenuOpen(false)} className="block px-4 py-2 text-sm text-dark hover:text-terracotta">Devenir partenaire</Link>
+            {user?.role === 'host' && (
+              <Link to="/host" onClick={() => setMenuOpen(false)} className="block px-4 py-2 text-sm text-terracotta font-semibold">Espace Pro</Link>
+            )}
+            {user?.role === 'admin' && (
+              <Link to="/admin" onClick={() => setMenuOpen(false)} className="block px-4 py-2 text-sm text-terracotta font-semibold">Admin</Link>
+            )}
             {!user && (
               <>
                 <Link to="/login" onClick={() => setMenuOpen(false)} className="block px-4 py-2 text-sm text-dark">Connexion</Link>

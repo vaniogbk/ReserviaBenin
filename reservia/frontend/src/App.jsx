@@ -24,6 +24,11 @@ import AdminReservations from './pages/admin/Reservations'
 import AdminHebergements from './pages/admin/Hebergements'
 import AdminEvenements from './pages/admin/Evenements'
 import AdminUtilisateurs from './pages/admin/Utilisateurs'
+import AdminPartenaires from './pages/admin/Partenaires'
+import HostDashboard from './pages/host/Dashboard'
+import HebergementsHost from './pages/host/HebergementsHost'
+import EvenementsHost from './pages/host/EvenementsHost'
+import ReservationsHost from './pages/host/ReservationsHost'
 import Partenaires from './pages/Partenaires'
 import MentionsLegales from './pages/legal/MentionsLegales'
 import Confidentialite from './pages/legal/Confidentialite'
@@ -66,11 +71,12 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-function ProtectedRoute({ children, adminOnly = false }) {
+function ProtectedRoute({ children, adminOnly = false, hostOnly = false }) {
   const { user, loading } = useAuth()
   if (loading) return <div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent" /></div>
   if (!user) return <Navigate to="/login" replace />
   if (adminOnly && user.role !== 'admin') return <Navigate to="/" replace />
+  if (hostOnly && !['host', 'admin'].includes(user.role)) return <Navigate to="/" replace />
   return children
 }
 
@@ -103,6 +109,12 @@ export default function App() {
                 <Route path="/admin/hebergements" element={<ProtectedRoute adminOnly><AdminHebergements /></ProtectedRoute>} />
                 <Route path="/admin/evenements" element={<ProtectedRoute adminOnly><AdminEvenements /></ProtectedRoute>} />
                 <Route path="/admin/utilisateurs" element={<ProtectedRoute adminOnly><AdminUtilisateurs /></ProtectedRoute>} />
+                <Route path="/admin/partenaires" element={<ProtectedRoute adminOnly><AdminPartenaires /></ProtectedRoute>} />
+                {/* ── Espace Hôte ── */}
+                <Route path="/host" element={<ProtectedRoute hostOnly><HostDashboard /></ProtectedRoute>} />
+                <Route path="/host/hebergements" element={<ProtectedRoute hostOnly><HebergementsHost /></ProtectedRoute>} />
+                <Route path="/host/evenements" element={<ProtectedRoute hostOnly><EvenementsHost /></ProtectedRoute>} />
+                <Route path="/host/reservations" element={<ProtectedRoute hostOnly><ReservationsHost /></ProtectedRoute>} />
               </Routes>
             </main>
             <Footer />

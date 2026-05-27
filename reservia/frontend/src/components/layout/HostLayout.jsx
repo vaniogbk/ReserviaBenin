@@ -2,23 +2,24 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import toast from 'react-hot-toast'
 import {
-  FaChartBar, FaClipboardList, FaBuilding, FaTicketAlt,
-  FaUsers, FaHandshake, FaArrowLeft, FaSignOutAlt, FaUserShield,
+  FaChartBar, FaBuilding, FaTicketAlt, FaClipboardList,
+  FaArrowLeft, FaSignOutAlt, FaUserTie,
 } from 'react-icons/fa'
 
-const NAV = [
-  { path: '/admin',              icon: FaChartBar,      label: 'Dashboard'      },
-  { path: '/admin/reservations', icon: FaClipboardList, label: 'Réservations'   },
-  { path: '/admin/hebergements', icon: FaBuilding,      label: 'Hébergements'   },
-  { path: '/admin/evenements',   icon: FaTicketAlt,     label: 'Événements'     },
-  { path: '/admin/utilisateurs', icon: FaUsers,         label: 'Utilisateurs'   },
-  { path: '/admin/partenaires',  icon: FaHandshake,     label: 'Partenaires'    },
-]
-
-export default function AdminLayout({ children, title }) {
+export default function HostLayout({ children, title }) {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()
+
+  const isHebergement = user?.type_activite === 'hebergement'
+  const isEvenement   = user?.type_activite === 'evenement'
+
+  const NAV = [
+    { path: '/host',              icon: FaChartBar,      label: 'Tableau de bord', always: true },
+    { path: '/host/hebergements', icon: FaBuilding,      label: 'Hébergements',    show: isHebergement },
+    { path: '/host/evenements',   icon: FaTicketAlt,     label: 'Événements',      show: isEvenement   },
+    { path: '/host/reservations', icon: FaClipboardList, label: 'Réservations',    always: true },
+  ].filter(item => item.always || item.show)
 
   const handleLogout = async () => {
     await logout()
@@ -27,7 +28,7 @@ export default function AdminLayout({ children, title }) {
   }
 
   const isActive = (path) =>
-    path === '/admin' ? location.pathname === path : location.pathname.startsWith(path)
+    path === '/host' ? location.pathname === path : location.pathname.startsWith(path)
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -39,8 +40,8 @@ export default function AdminLayout({ children, title }) {
             Réser<span className="text-terracotta italic">via</span>
           </div>
           <div className="flex items-center gap-2 mt-1">
-            <FaUserShield size={10} className="text-terracotta" />
-            <span className="text-xs text-white/40 tracking-widest uppercase">Administration</span>
+            <FaUserTie size={10} className="text-terracotta" />
+            <span className="text-xs text-white/40 tracking-widest uppercase">Espace Partenaire</span>
           </div>
         </div>
 
