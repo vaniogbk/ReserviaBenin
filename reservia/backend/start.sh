@@ -22,4 +22,8 @@ else
     echo "Database already has data ($USER_COUNT users, $HEBERGEMENT_COUNT hebergements), skipping seed."
 fi
 
+# Vérifier les comptes non vérifiés et les activer automatiquement
+php artisan tinker --execute="DB::table('users')->whereNull('email_verified_at')->update(['email_verified_at' => now()]);" 2>/dev/null
+echo "Email verification fix applied."
+
 exec php artisan serve --host=0.0.0.0 --port=${PORT:-8000}
